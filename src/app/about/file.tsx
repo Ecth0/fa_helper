@@ -1,5 +1,6 @@
-export default function About() {
-  return (
-      <h1>About</h1>
-  );
+import { useRouter } from 'next/router'
+ 
+export default function Page() {
+  const router = useRouter()
+  return <p>Post: {router.query.slug}</p>
 }
