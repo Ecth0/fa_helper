@@ -140,7 +140,7 @@ export default function TeamsPage() {
               <h2 className="text-2xl font-semibold">Equipes disponibles</h2>
             </div>
             <p className="text-sm text-slate-400 hidden md:block">
-              Les données sont fictives pour amorcer la page et seront connectées à un CMS plus tard.
+              Les données sont fictives pour l'instant.
             </p>
           </div>
 
@@ -197,7 +197,7 @@ function TeamCard({ team }: { team: Team }) {
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-300">
         <span className="rounded-full border border-amber-300/40 px-3 py-1 text-amber-200">
-          Tryouts {team.trialWindow}
+          Scrims {team.trialWindow}
         </span>
         <span className="rounded-full border border-emerald-300/40 px-3 py-1 text-emerald-200">
           {team.urgency}
