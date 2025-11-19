@@ -10,7 +10,19 @@ import teamsData from "@/data/teams.json"
 
 type Team = (typeof teamsData)[number]
 
-const roleOptions = Array.from(new Set(teamsData.flatMap((team) => team.needs))).sort()
+const desiredRoleOrder = ["Top", "Jungle", "Mid", "ADC", "Support"]
+const rawRoleOptions = Array.from(new Set(teamsData.flatMap((team) => team.needs)))
+
+const sortedCoreRoles = desiredRoleOrder.filter((role) => rawRoleOptions.includes(role))
+const remainingRoles = rawRoleOptions.filter(
+  (role) => role !== "Analyste" && !desiredRoleOrder.includes(role)
+)
+
+const roleOptions = [
+  ...sortedCoreRoles,
+  ...remainingRoles.sort((a, b) => a.localeCompare(b)),
+  ...(rawRoleOptions.includes("Analyste") ? ["Analyste"] : []),
+]
 const tierOptions = Array.from(new Set(teamsData.map((team) => team.tier)))
 
 export default function TeamsPage() {
@@ -49,7 +61,7 @@ export default function TeamsPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
         <header className="space-y-2">
           <p className="text-xs font-semibold text-blue-300/80">Trouver une équipe</p>
@@ -60,7 +72,7 @@ export default function TeamsPage() {
           </p>
         </header>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+        <section className="rounded-3xl border border-white/10 bg-slate-950/60 p-6">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[220px]">
               <label className="text-xs font-semibold text-slate-400">Role cible</label>
@@ -125,26 +137,22 @@ export default function TeamsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-slate-400">Rosters ouverts</p>
-              <h2 className="text-2xl font-semibold">
-                {filteredTeams.length} équipe{filteredTeams.length > 1 ? "s" : ""} correspondante{filteredTeams.length > 1 ? "s" : ""}
-              </h2>
+              <h2 className="text-2xl font-semibold">Equipes disponibles</h2>
             </div>
             <p className="text-sm text-slate-400 hidden md:block">
               Les données sont fictives pour amorcer la page et seront connectées à un CMS plus tard.
             </p>
           </div>
 
-          {filteredTeams.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/40 p-10 text-center text-slate-400">
-              Aucune équipe ne match tes filtres. Tente un autre rôle ou élargis la recherche.
-            </div>
-          ) : (
-            <div className="grid gap-5">
-              {filteredTeams.map((team) => (
-                <TeamCard key={team.id} team={team} />
-              ))}
-            </div>
-          )}
+          <div className="grid gap-5">
+            {filteredTeams.length === 0 ? (
+              <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-10 text-center text-slate-400">
+                Aucune équipe ne match tes filtres. Tente un autre rôle ou élargis la recherche.
+              </div>
+            ) : (
+              filteredTeams.map((team) => <TeamCard key={team.id} team={team} />)
+            )}
+          </div>
         </section>
       </div>
     </div>
@@ -210,7 +218,7 @@ function TeamCard({ team }: { team: Team }) {
 function InfoBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{label}</p>
+      <p className="text-xs font-semibold text-slate-400">{label}</p>
       <div className="mt-2 space-y-1">{children}</div>
     </div>
   )

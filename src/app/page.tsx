@@ -270,9 +270,6 @@ export default function Home() {
             <h1 className="text-2xl font-semibold">FA_helper</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/create-profile">
-              <Button className="bg-blue-500 text-white hover:bg-blue-400">Nouveau profil</Button>
-            </Link>
           </div>
         </header>
 
