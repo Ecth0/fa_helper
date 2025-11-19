@@ -8,7 +8,7 @@ const quickActions = [
   {
     title: "Trouver une equipe",
     description: "Filtre par role, elo et disponibilites.",
-    href: "#teams",
+    href: "/teams",
     badge: "",
   },
   {
@@ -20,7 +20,7 @@ const quickActions = [
   {
     title: "Organiser un tryout",
     description: "Scrims publics avec calendrier integre.",
-    href: "#tryout",
+    href: "/tryout",
     badge: "",
   },
 ]
@@ -143,7 +143,6 @@ function HeroSearch() {
         <Button className="w-full md:w-auto">Lancer la recherche</Button>
       </div>
       <p className="mt-3 text-xs text-slate-400">
-        Conseil : ajoute ta disponibilite (full time / part time) pour remonter dans les resultats.
       </p>
     </section>
   )
@@ -186,9 +185,6 @@ function Resources() {
           </p>
           <h3 className="text-2xl font-semibold text-white">Boite a outils staff & joueurs</h3>
         </div>
-        <Button variant="outline" className="border-white/20 bg-white/5 text-white">
-          Tout parcourir
-        </Button>
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         {resources.map((resource) => (
