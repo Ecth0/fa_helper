@@ -18,23 +18,10 @@ const quickActions = [
     badge: "",
   },
   {
-    title: "Organiser un tryout",
-    description: "Scrims publics avec calendrier integre.",
-    href: "/tryout",
+    title: "Organiser un scrim",
+    description: "Scrims publics avec calendrier intégré.",
+    href: "/scrims",
     badge: "",
-  },
-]
-
-const resources = [
-  {
-    title: "Checklist staff",
-    description: "Contrat, coaching, medical, tout est la.",
-    href: "#staff",
-  },
-  {
-    title: "Guide tryouts",
-    description: "Evaluer un roster en 3 sessions.",
-    href: "#guide",
   },
 ]
 
@@ -150,12 +137,12 @@ function HeroSearch() {
 
 function QuickActions() {
   return (
-    <section className="grid gap-4 md:grid-cols-3">
+    <section className="grid gap-6 md:grid-cols-3">
       {quickActions.map((action) => (
         <Link
           key={action.title}
           href={action.href}
-          className="group rounded-2xl border border-white/10 bg-slate-900/50 p-5 transition hover:-translate-y-0.5 hover:border-blue-400/60 hover:bg-slate-900/80"
+          className="group min-h-[190px] rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 via-slate-950 to-slate-900/70 p-7 transition hover:-translate-y-1 hover:border-blue-400/60 hover:bg-slate-900/90"
         >
           <div className="flex items-center justify-between">
             {action.badge && (
@@ -167,40 +154,10 @@ function QuickActions() {
               →
             </span>
           </div>
-          <h3 className="mt-2 text-lg font-semibold text-white">{action.title}</h3>
-          <p className="mt-1 text-sm text-slate-300">{action.description}</p>
+          <h3 className="mt-4 text-2xl font-semibold text-white">{action.title}</h3>
+          <p className="mt-2 text-base text-slate-300">{action.description}</p>
         </Link>
       ))}
-    </section>
-  )
-}
-
-function Resources() {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/60 via-slate-900/30 to-slate-900/60 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-blue-200/70">
-            Ressources
-          </p>
-          <h3 className="text-2xl font-semibold text-white">Boite a outils staff & joueurs</h3>
-        </div>
-      </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {resources.map((resource) => (
-          <Link
-            key={resource.title}
-            href={resource.href}
-            className="rounded-xl border border-white/10 bg-slate-900/60 p-4 transition hover:border-blue-400/60 hover:bg-slate-900"
-          >
-            <h4 className="text-lg font-semibold text-white">{resource.title}</h4>
-            <p className="mt-2 text-sm text-slate-300">{resource.description}</p>
-            <span className="mt-4 inline-flex items-center text-sm font-semibold text-blue-300">
-              Consulter <span className="ml-1">↗</span>
-            </span>
-          </Link>
-        ))}
-      </div>
     </section>
   )
 }
@@ -282,7 +239,7 @@ function SidePanel() {
         {[
           { label: "Demandes recues", value: 4, tone: "text-green-300" },
           { label: "Invitations scrim", value: 2, tone: "text-blue-200" },
-          { label: "Tryouts planifies", value: 1, tone: "text-amber-200" },
+          { label: "Scrims planifies", value: 1, tone: "text-amber-200" },
         ].map((item) => (
           <div
             key={item.label}
@@ -313,9 +270,6 @@ export default function Home() {
             <h1 className="text-2xl font-semibold">FA_helper</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="ghost" className="text-white/80">
-              Historique
-            </Button>
             <Link href="/create-profile">
               <Button className="bg-blue-500 text-white hover:bg-blue-400">Nouveau profil</Button>
             </Link>
@@ -324,7 +278,6 @@ export default function Home() {
 
         <div className="space-y-8">
           <QuickActions />
-          <Resources />
         </div>
       </div>
     </div>
