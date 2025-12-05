@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useMemo, useState } from "react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,27 +62,35 @@ export default function TeamsPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
-        <header className="space-y-2">
-          <p className="text-xs font-semibold text-blue-300/80">Trouver une équipe</p>
-          <h1 className="text-3xl font-semibold">Trouver une équipe</h1>
-          <p className="text-sm text-slate-300">
-            Filtre les équipes par rôle, élo et disponibilités. Cette page servira à explorer les
-            rosters ouverts et à postuler directement.
-          </p>
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-8 pb-4 border-b border-gray-700">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-red-400">Trouver une équipe</p>
+              <h1 className="text-3xl font-bold text-white">Trouver une équipe</h1>
+              <p className="text-gray-400">
+                Filtre les équipes par rôle, élo et disponibilités...
+              </p>
+            </div>
+            <Link href="/">
+              <Button variant="ghost" className="text-sm hover:bg-yellow-900/30">
+                Retour à l'accueil
+              </Button>
+            </Link>
+          </div>
         </header>
 
-        <section className="rounded-3xl border border-white/10 bg-slate-950/60 p-6">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[220px]">
-              <label className="text-xs font-semibold text-slate-400">Role cible</label>
+        <section className="border border-gray-700 bg-gray-800 p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="text-sm font-medium text-slate-400">Rôle cible</label>
               <select
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                className="w-full border border-gray-700 bg-gray-700 p-2 text-white outline-none"
                 value={roleFilter}
                 onChange={(event) => setRoleFilter(event.target.value)}
               >
-                <option value="all">Tous les roles</option>
+                <option value="all">Tous les rôles</option>
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
                     {role}
@@ -89,10 +98,10 @@ export default function TeamsPage() {
                 ))}
               </select>
             </div>
-            <div className="flex-1 min-w-[220px]">
-              <label className="text-xs font-semibold text-slate-400">Tier</label>
+            <div>
+              <label className="text-sm font-medium text-slate-400">Tier</label>
               <select
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
+                className="w-full border border-gray-700 bg-gray-700 p-2 text-white outline-none"
                 value={tierFilter}
                 onChange={(event) => setTierFilter(event.target.value)}
               >
@@ -104,50 +113,51 @@ export default function TeamsPage() {
                 ))}
               </select>
             </div>
-            <div className="flex-1 min-w-[220px]">
-              <label className="text-xs font-semibold text-slate-400">Rechercher</label>
+            <div>
+              <label className="text-sm font-medium text-slate-400">Rechercher</label>
               <Input
-                className="mt-2 rounded-2xl border border-white/10 bg-slate-950/70 text-sm text-white placeholder:text-slate-500"
+                className="w-full border border-gray-700 bg-gray-700 p-2 text-white placeholder-gray-400"
                 placeholder="Nom, ligue, focus..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
             </div>
           </div>
-          <div className="mt-6 grid gap-4 text-sm text-slate-300 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-              <p className="text-xs font-semibold text-blue-200/80">Spots ouverts</p>
-              <p className="mt-2 text-2xl font-semibold text-white">{summary.totalSpots}</p>
-              <p className="text-xs text-slate-400">Postes à pourvoir immédiats</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border border-gray-700 bg-gray-800 p-4">
+              <p className="text-sm font-medium text-yellow-400">Spots ouverts</p>
+              <p className="text-2xl font-semibold text-yellow-400">{summary.totalSpots}</p>
+              <p className="text-xs text-gray-400">Postes à pourvoir</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-              <p className="text-xs font-semibold text-amber-200/80">Urgence</p>
-              <p className="mt-2 text-2xl font-semibold text-white">{summary.urgentTeams}</p>
-              <p className="text-xs text-slate-400">Equipes à staffed ASAP</p>
+            <div className="border border-gray-700 bg-gray-800 p-4">
+              <p className="text-sm font-medium text-yellow-400">Urgence</p>
+              <p className="text-2xl font-semibold">{summary.urgentTeams}</p>
+              <p className="text-xs text-gray-400">Équipes à staffer</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-              <p className="text-xs font-semibold text-emerald-200/80">Tryouts en cours</p>
-              <p className="mt-2 text-2xl font-semibold text-white">{summary.trialWindows}</p>
-              <p className="text-xs text-slate-400">Sessions actives ce mois</p>
+            <div className="border border-gray-700 bg-gray-800 p-4">
+              <p className="text-sm font-medium text-green-400">Scrims en cours</p>
+              <p className="text-2xl font-semibold">{summary.trialWindows}</p>
+              <p className="text-xs text-gray-400">Sessions actives</p>
             </div>
           </div>
         </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
+        <section className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
-              <p className="text-xs font-semibold text-slate-400">Rosters ouverts</p>
-              <h2 className="text-2xl font-semibold">Equipes disponibles</h2>
+              <p className="text-sm font-medium text-yellow-400">ROSTERS OUVERTS</p>
+              <h2 className="text-xl font-semibold">Équipes disponibles</h2>
             </div>
-            <p className="text-sm text-slate-400 hidden md:block">
+            <p className="text-sm text-gray-400">
               Les données sont fictives pour l'instant.
             </p>
           </div>
 
-          <div className="grid gap-5">
+          <div className="space-y-4">
             {filteredTeams.length === 0 ? (
-              <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-10 text-center text-slate-400">
-                Aucune équipe ne match tes filtres. Tente un autre rôle ou élargis la recherche.
+              <div className="border border-gray-700 bg-gray-800 p-8 text-center text-gray-300">
+                Aucune équipe ne correspond à tes filtres. Essaie un autre rôle ou élargis ta recherche.
               </div>
             ) : (
               filteredTeams.map((team) => <TeamCard key={team.id} team={team} />)
@@ -161,51 +171,53 @@ export default function TeamsPage() {
 
 function TeamCard({ team }: { team: Team }) {
   return (
-    <article className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-inner shadow-blue-500/5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p className="text-xs font-semibold text-blue-200/80">{team.league}</p>
-          <h3 className="text-2xl font-semibold text-white">{team.name}</h3>
-          <p className="text-sm text-slate-300">{team.projectFocus.join(" • ")}</p>
+    <article className="border border-gray-700 bg-gray-800 p-5 hover:border-yellow-500">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div className="flex-1">
+          <p className="text-xs font-semibold text-yellow-500">{team.league}</p>
+          <h3 className="text-xl font-semibold text-white">{team.name}</h3>
+          <p className="text-gray-300">{team.projectFocus.join(" • ")}</p>
         </div>
-        <div className="text-right text-sm text-slate-400">
-          <p className="font-semibold text-white">{team.tier}</p>
-          <p>{team.level}</p>
-          <p className="text-xs text-slate-500">Maj {team.lastUpdated}</p>
+        <div className="md:text-right">
+          <div className="inline-block border border-yellow-500/50 bg-yellow-900/20 p-2 text-center">
+            <p className="font-semibold text-white">{team.tier}</p>
+            <p className="text-sm">{team.level}</p>
+            <p className="text-xs text-gray-500">Maj {team.lastUpdated}</p>
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <InfoBlock label="Besoin immédiat">
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <InfoBlock label="BESOIN IMMÉDIAT">
           <div className="flex flex-wrap gap-2">
             {team.needs.map((role) => (
-              <span key={role} className="rounded-full border border-blue-400/40 px-3 py-1 text-xs text-blue-100">
+              <span key={role} className="border border-yellow-500/40 bg-yellow-900/20 px-3 py-1 text-xs">
                 {role}
               </span>
             ))}
           </div>
         </InfoBlock>
         <InfoBlock label="Cadence & dispo">
-          <p className="text-sm text-slate-200">{team.availability}</p>
-          <p className="text-xs text-slate-500">{team.practiceSchedule.join(" • ")}</p>
+          <p className="text-sm text-gray-200">{team.availability}</p>
+          <p className="text-xs text-gray-500">{team.practiceSchedule.join(" • ")}</p>
         </InfoBlock>
         <InfoBlock label="Staff & format">
-          <p className="text-sm text-slate-200">{team.staffNotes}</p>
-          <p className="text-xs text-slate-500">{team.format}</p>
+          <p className="text-sm text-gray-200">{team.staffNotes}</p>
+          <p className="text-xs text-gray-500">{team.format}</p>
         </InfoBlock>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-300">
-        <span className="rounded-full border border-amber-300/40 px-3 py-1 text-amber-200">
+      <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-gray-300">
+        <span className="rounded-full border border-yellow-400/40 bg-yellow-900/20 px-3 py-1 text-yellow-200">
           Scrims {team.trialWindow}
         </span>
         <span className="rounded-full border border-emerald-300/40 px-3 py-1 text-emerald-200">
           {team.urgency}
         </span>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-slate-200">
+        <span className="rounded-full border border-red-900/40 bg-gray-700/50 px-3 py-1 text-gray-200">
           Langues : {team.languages.join(" / ")}
         </span>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-slate-200">
+        <span className="rounded-full border border-red-900/40 bg-gray-700/50 px-3 py-1 text-gray-200">
           Région : {team.region}
         </span>
       </div>
@@ -217,11 +229,11 @@ function TeamCard({ team }: { team: Team }) {
 
 function InfoBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-      <p className="text-xs font-semibold text-slate-400">{label}</p>
-      <div className="mt-2 space-y-1">{children}</div>
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-gray-400">{label}</p>
+      <div className="text-sm">
+        {children}
+      </div>
     </div>
   )
 }
-
-
