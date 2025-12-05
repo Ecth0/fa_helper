@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Styles personnalisés pour les pages de profil */
+
+/* Animations pour les transitions */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Classe utilitaire pour les animations */
+.animate-slide-in-up {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Styles pour les cartes */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-lg hover:border-gray-600;
+}
+
+/* Styles pour les badges de qualité */
+.quality-badge {
+  @apply inline-block px-3 py-1 rounded-full text-sm font-medium transition-colors;
+}
+
+.quality-badge-primary {
+  @apply bg-blue-600/20 border border-blue-600/50 text-blue-300 hover:bg-blue-600/30;
+}
+
+/* Styles pour les miniatures VOD */
+.vod-thumbnail {
+  @apply aspect-video overflow-hidden rounded-lg bg-gray-800 relative;
+}
+
+.vod-thumbnail img {
+  @apply w-full h-full object-cover transition-opacity duration-200;
+}
+
+.vod-thumbnail:hover img {
+  @apply opacity-75;
+}
+
+.vod-overlay {
+  @apply absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center duration-200;
+}
+
+/* Styles pour les formulaires */
+.form-input {
+  @apply bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 focus:outline-none focus:border-gray-600 transition-colors;
+}
+
+.form-input:focus {
+  @apply ring-1 ring-blue-600/50;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-300 mb-2;
+}
+
+/* Styles pour les sections */
+.section-card {
+  @apply bg-gray-900 border border-gray-800 rounded-lg p-6 card-hover;
+}
+
+/* Styles pour les boutons de suppression rapide */
+.quick-delete-btn {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .vod-grid {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .vod-grid {
+    @apply grid-cols-3;
+  }
+}

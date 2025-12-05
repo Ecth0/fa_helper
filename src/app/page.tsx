@@ -1,5 +1,8 @@
+"use client"
+
 import Link from "next/link"
 
+import React, { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { InputGroup } from "@/components/ui/input-group"
@@ -72,7 +75,7 @@ const trendingTeams = [
     name: "Project Nexus",
     tier: "Mixte Master+",
     needs: ["Top", "Mid"],
-    tags: ["Tryouts ouverts", "Bootcamp Berlin"],
+    tags: ["Scrims ouverts", "Bootcamp Berlin"],
   },
 ]
 
@@ -81,81 +84,45 @@ const ranks = ["Diamant", "Master", "Grandmaster", "Challenger"]
 
 function HeroSearch() {
   return (
-    <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-blue-600/30 via-slate-900 to-slate-950 p-8 shadow-2xl shadow-blue-500/10 backdrop-blur">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="max-w-2xl space-y-4">
-          <p className="text-xs uppercase tracking-[0.4em] text-blue-200/80">
+    <section className="border border-gray-700 bg-gray-900 p-6 mb-8">
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-2xl space-y-3">
+          <p className="text-xs uppercase tracking text-red-400">
             League of Legends Talent Network
           </p>
-          <h1 className="text-4xl font-semibold leading-tight text-white">
+          <h1 className="text-3xl font-semibold text-white">
             Le LinkedIn des joueurs et staffs LoL ambitieux
           </h1>
-          <p className="text-base text-slate-200">
-            Centralise profils, equipes et tryouts. Trouve ta prochaine line-up ou recrute le joueur parfait
-            avec stats live et disponibilites partagees.
+          <p className="text-gray-300">
+            Centralise profils, équipes et scrims. Trouve ta prochaine line-up ou recrute le joueur parfait
+            avec stats live et disponibilités partagées.
           </p>
         </div>
-        <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-          <p className="text-sm text-slate-400">Matchs et tryouts programmes</p>
-          <p className="text-3xl font-semibold text-white">32</p>
-          <p className="text-xs text-slate-500">Dont 8 ouverts communautaires</p>
+        <div className="p-4 border border-gray-700 bg-gray-800">
+          <p className="text-sm text-gray-300">Matchs et scrims programmés</p>
+          <p className="text-2xl font-semibold text-red-500">12</p>
         </div>
       </div>
-
-      <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-950/80 p-4 shadow-inner shadow-blue-500/10 md:flex-row md:items-center md:gap-6">
-        <InputGroup className="flex-1 flex-row gap-3 rounded-xl border border-white/5 bg-transparent p-3">
-          <Input
-            placeholder="Pseudo, equipe ou mot cle..."
-            className="flex-1 border-none bg-transparent text-base text-white placeholder:text-slate-500"
-          />
-    </InputGroup> 
-        <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row">
-          <select className="min-w-[160px] rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none">
-            <option value="">Role</option>
-            {roles.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-          <select className="min-w-[160px] rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none">
-            <option value="">Elo</option>
-            {ranks.map((rank) => (
-              <option key={rank} value={rank}>
-                {rank}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button className="w-full md:w-auto">Lancer la recherche</Button>
-      </div>
-      <p className="mt-3 text-xs text-slate-400">
-      </p>
     </section>
   )
 }
 
 function QuickActions() {
   return (
-    <section className="grid gap-6 md:grid-cols-3">
+    <section className="grid gap-4 md:grid-cols-3 mb-8">
       {quickActions.map((action) => (
         <Link
           key={action.title}
           href={action.href}
-          className="group min-h-[190px] rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/70 via-slate-950 to-slate-900/70 p-7 transition hover:-translate-y-1 hover:border-blue-400/60 hover:bg-slate-900/90"
+          className="p-5 border border-gray-700 bg-gray-800 text-white hover:border-red-500"
         >
-          <div className="flex items-center justify-between">
-            {action.badge && (
-              <span className="text-xs font-medium uppercase tracking-wider text-blue-300/80">
-                {action.badge}
-              </span>
-            )}
-            <span className="text-slate-500 transition group-hover:text-blue-200">
-              →
-            </span>
+          <div className="flex justify-between items-start">
+            <h3 className="text-xl font-semibold">
+              {action.title}
+            </h3>
+            <span className="text-red-500">→</span>
           </div>
-          <h3 className="mt-4 text-2xl font-semibold text-white">{action.title}</h3>
-          <p className="mt-2 text-base text-slate-300">{action.description}</p>
+          <p className="mt-2 text-gray-300">{action.description}</p>
         </Link>
       ))}
     </section>
@@ -163,98 +130,137 @@ function QuickActions() {
 }
 
 function CommunitySpotlight() {
+  const [profiles, setProfiles] = useState<any[]>([])
+
+  useEffect(() => {
+    try {
+      const list = localStorage.getItem('playerProfiles')
+      if (list) {
+        const parsed = JSON.parse(list)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProfiles(parsed)
+          return
+        }
+      }
+
+      // fallback to single playerProfile
+      const single = localStorage.getItem('playerProfile')
+      if (single) {
+        const p = JSON.parse(single)
+        setProfiles([p])
+        return
+      }
+
+      // no real profiles found: keep profiles empty (don't show fictional examples)
+      setProfiles([])
+    } catch (e) {
+      console.error('Erreur loading profiles for spotlight', e)
+      setProfiles([])
+    }
+  }, [])
+
   return (
-    <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-violet-600/20 via-slate-900 to-slate-950 p-6">
-      <div className="flex items-center justify-between gap-4">
+    <section className="border border-gray-700 bg-gray-900 p-6 mb-8">
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-violet-200/80">Talents</p>
+          <p className="text-xs uppercase tracking text-red-400-sm font-medium text-red-500 mb-1">TALENTS</p>
           <h2 className="text-2xl font-semibold text-white">Profils mis en avant</h2>
         </div>
-        <Button variant="outline" className="border-white/20 bg-white/5 text-white">
-          Voir le flux
-        </Button>
+        <Link href="/profiles/">
+        <Button className="bg-red-600 text-white hover:bg-red-700 px-4">Voir les profils →</Button>
+        </Link>
       </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {featuredPlayers.map((player) => (
-          <div key={player.pseudo} className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-slate-400">{player.role}</p>
-                <h3 className="text-xl font-semibold text-white">{player.pseudo}</h3>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {(() => {
+          // Build display list: first real profiles, then fill with examples (marked)
+          const display: any[] = []
+          display.push(...profiles.slice(0, 3))
+          let idx = 0
+          while (display.length < 3 && idx < featuredPlayers.length) {
+            display.push({ ...featuredPlayers[idx], __example: true })
+            idx++
+          }
+
+          if (display.length === 0) {
+            return (
+              <div className="p-6 border border-gray-700 bg-gray-800 col-span-3">
+                <p className="text-gray-300 mb-2">Aucun profil publié pour le moment.</p>
+                <Link href="/create-profile">
+                  <Button className="bg-red-600 text-white hover:bg-red-700">Publier mon profil</Button>
+                </Link>
               </div>
-              <span className="text-xs rounded-full border border-white/20 px-3 py-1 text-slate-200">
-                {player.rank}
-              </span>
-            </div>
-            <p className="mt-3 text-sm text-slate-300">{player.style}</p>
-            <p className="mt-1 text-xs text-slate-500">Recherche : {player.looking}</p>
-            <Button variant="ghost" className="mt-4 text-blue-300 hover:bg-white/5">
-              Voir le profil
-            </Button>
-          </div>
-        ))}
+            )
+          }
+
+          const slugify = (s: string) =>
+            s
+              .toString()
+              .normalize('NFKD')
+              .replace(/\p{Diacritic}/gu, '')
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)/g, '')
+
+          return display.map((player: any, i: number) => {
+            const name = player.pseudo || player.name || `Player ${i + 1}`
+            const role = player.role || (Array.isArray(player.roles) && player.roles[0]) || '---'
+            const rank = player.rank || player.tier || ''
+            const style = player.style || player.description || ''
+            const isExample = Boolean(player.__example)
+
+            return (
+              <div key={`${name}-${i}`} className="p-4 border border-gray-700 bg-gray-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-red-500">{role}</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold">{name}</h3>
+                      {isExample && (
+                        <span className="text-xs rounded-full border border-gray-600 bg-gray-700 px-2 py-0.5 text-gray-200">
+                          Exemple
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs bg-gray-700 px-2 py-1">{rank}</span>
+                </div>
+                <p className="text-sm text-gray-300 mb-2">{style}</p>
+                <Link href={`/profiles/${slugify(name)}`} className="w-full">
+                  <Button className="w-full bg-gray-700 hover:bg-gray-600">Voir le profil</Button>
+                </Link>
+              </div>
+            )
+          })
+        })()}
       </div>
     </section>
   )
 }
 
-function Checklist() {
-  return (
-    <section
-      id="checklist"
-      className="rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-400/10 via-emerald-200/5 to-transparent p-6 text-emerald-100"
-    >
-      <div className="flex flex-col gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-emerald-200/80">
-            Checklist
-          </p>
-          <h3 className="text-2xl font-semibold">Profil pret pour tryout</h3>
-        </div>
-        <ul className="space-y-3">
-          {spotlightTips.map((tip) => (
-            <li key={tip} className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 p-3">
-              <span className="mt-1 text-base text-emerald-300">✔</span>
-              <p className="text-sm text-white/90">{tip}</p>
-            </li>
-          ))}
-        </ul>
-        <Button variant="secondary" className="self-start bg-white/10 text-white">
-          Exporter en PDF
-        </Button>
-    </div>
-    </section>
-  )
-}
 
 function SidePanel() {
   return (
-    <aside className="sticky top-6 space-y-6 rounded-3xl border border-white/10 bg-white/5 p-6 text-white shadow-xl shadow-blue-500/10 backdrop-blur">
+    <aside className="sticky top-6 space-y-6 rounded-3xl border border-red-900/30 bg-gray-900 p-6 text-white shadow-[0_35px_80px_rgba(255,0,0,0.1)]">
       <div>
-        <p className="text-xs uppercase tracking-[0.4em] text-blue-200/70">Briefing</p>
+        <p className="text-xs uppercase tracking text-red-400">Statistiques</p>
         <h2 className="text-3xl font-semibold">Matchmaking</h2>
-        <p className="text-sm text-slate-300">12 nouvelles equipes compatibles</p>
+        <p className="text-sm text-gray-400">12 nouvelles équipes adaptées</  p>
       </div>
       <div className="space-y-3">
         {[
-          { label: "Demandes recues", value: 4, tone: "text-green-300" },
-          { label: "Invitations scrim", value: 2, tone: "text-blue-200" },
-          { label: "Scrims planifies", value: 1, tone: "text-amber-200" },
+          { label: "Demandes reçues", value: 4, tone: "text-emerald-300" },
+          { label: "Invitations scrim", value: 2, tone: "text-rose-200" },
+          { label: "Scrims planifiés", value: 1, tone: "text-amber-200" },
         ].map((item) => (
           <div
             key={item.label}
-            className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm"
+            className="flex items-center justify-between rounded-2xl border border-red-900/30 bg-gray-800/80 px-4 py-3 text-sm hover:border-red-900/50 transition-colors"
           >
             <span>{item.label}</span>
             <span className={item.tone}>{item.value}</span>
           </div>
         ))}
-      </div>
-      <div className="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-        <p className="text-sm text-blue-100">
-          Besoin d'une review VOD ? Coachs LFL dispo sous 24h.
-        </p>
-        <Button className="mt-3 w-full bg-blue-500 hover:bg-blue-400">Préparer un scrim</Button>
       </div>
     </aside>
   )
@@ -262,21 +268,25 @@ function SidePanel() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 lg:py-14">
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 backdrop-blur">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-blue-300/80">Dashboard</p>
-            <h1 className="text-2xl font-semibold">FA_helper</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-          </div>
-        </header>
-
-        <div className="space-y-8">
-          <QuickActions />
+    <div className="space-y-8">
+      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+        <div className="max-w-3xl">
+          <p className="text-xs uppercase tracking text-red-400">Bienvenue sur</p>
+          <h1 className="text-3xl font-bold text-white md:text-4xl">FA Helper</h1>
+          <p className="mt-2 text-gray-300">
+            La plateforme pour les joueurs et équipes compétitives de League of Legends
+          </p>
         </div>
       </div>
+
+        <div className="space-y-8">
+          <HeroSearch />
+          <QuickActions />
+          <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+            <CommunitySpotlight />
+            <SidePanel />
+          </div>
+        </div>
     </div>
   )
 }

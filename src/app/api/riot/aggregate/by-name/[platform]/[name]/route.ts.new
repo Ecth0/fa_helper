@@ -1,0 +1,116 @@
+import { NextResponse } from 'next/server';
+
+// Aggregates useful Riot info for a player: summoner, activeShard, league entries, champion masteries, recent match ids
+export async function GET(
+  request: Request,
+  { params }: { params: { platform: string; name: string } }
+) {
+  const { platform, name } = params;
+  const RIOT_API_KEY = 'RGAPI-432c5817-8218-4ca6-97ff-6858a1e08244';
+
+  if (!platform || !name) {
+    return NextResponse.json({ error: 'Platform and name required' }, { status: 400 });
+  }
+
+  try {
+    // 1) Summoner by name
+    const summonerRes = await fetch(
+      `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(name)}`,
+      { headers: { 'X-Riot-Token': RIOT_API_KEY } }
+    );
+    if (!summonerRes.ok) {
+      const err = await summonerRes.json().catch(() => ({}));
+      return NextResponse.json({ error: err?.status?.message || 'Failed summoner lookup' }, { status: summonerRes.status });
+    }
+    const summoner = await summonerRes.json();
+
+    const puuid = summoner.puuid;
+    const summonerId = summoner.id;
+
+    // 2) active-shards to resolve canonical platform/region
+    let activeShard: any = null;
+    try {
+      const shardRes = await fetch(
+        `https://europe.api.riotgames.com/riot/account/v1/active-shards/by-game/lol/by-puuid/${encodeURIComponent(puuid)}`,
+        { headers: { 'X-Riot-Token': RIOT_API_KEY } }
+      );
+      if (shardRes.ok) activeShard = await shardRes.json();
+    } catch (e) {
+      console.warn('active-shards lookup failed', e);
+    }
+
+    // Use platform (routing) either from activeShard.platform lowercased or provided platform
+    const canonicalPlatform = activeShard?.platform ? activeShard.platform.toString().toLowerCase() : platform;
+
+    // 3) league entries
+    let leagueEntries: any[] = [];
+    try {
+      const leagueRes = await fetch(
+        `https://${canonicalPlatform}.api.riotgames.com/lol/league/v4/entries/by-summoner/${encodeURIComponent(summonerId)}`,
+        { headers: { 'X-Riot-Token': RIOT_API_KEY } }
+      );
+      if (leagueRes.ok) leagueEntries = await leagueRes.json();
+    } catch (e) {
+      console.warn('league entries lookup failed', e);
+    }
+
+    // 4) champion masteries (all, for complete storage)
+    let championMasteries: any[] = [];
+    try {
+      const cmRes = await fetch(
+        `https://${canonicalPlatform}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/${encodeURIComponent(summonerId)}`,
+        { headers: { 'X-Riot-Token': RIOT_API_KEY } }
+      );
+      if (cmRes.ok) {
+        championMasteries = await cmRes.json();
+      }
+    } catch (e) {
+      console.warn('champion mastery lookup failed', e);
+    }
+
+    // Also get mastery score
+    let masteryScore = 0;
+    try {
+      const scoreRes = await fetch(
+        `https://${canonicalPlatform}.api.riotgames.com/lol/champion-mastery/v4/scores/by-summoner/${encodeURIComponent(summonerId)}`,
+        { headers: { 'X-Riot-Token': RIOT_API_KEY } }
+      );
+      if (scoreRes.ok) {
+        masteryScore = await scoreRes.json();
+      }
+    } catch (e) {
+      console.warn('mastery score lookup failed', e);
+    }
+
+    // 5) recent match ids via match-v5: need regional routing (use activeShard.region if present)
+    let recentMatchIds: string[] = [];
+    try {
+      const regionHost = (activeShard?.region || 'europe').toString().toLowerCase();
+      const matchHost = regionHost; // e.g. 'europe', 'americas', 'asia'
+      const matchRes = await fetch(
+        `https://${matchHost}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}?start=0&count=5`,
+        { headers: { 'X-Riot-Token': RIOT_API_KEY } }
+      );
+      if (matchRes.ok) recentMatchIds = await matchRes.json();
+    } catch (e) {
+      console.warn('match ids lookup failed', e);
+    }
+
+    const aggregated = {
+      summoner,
+      activeShard,
+      canonicalPlatform,
+      leagueEntries,
+      championMasteries,
+      masteryScore,
+      recentMatchIds,
+    };
+
+    return NextResponse.json(aggregated);
+  } catch (error) {
+    console.error('Aggregate error', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export const dynamic = 'force-dynamic';

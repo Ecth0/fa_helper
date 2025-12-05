@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
+import { Red_Hat_Display } from "next/font/google"
+import "./globals.css"
+import { MainNav } from "@/components/MainNav"
+import { Toaster } from "sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -10,6 +13,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const redHatDisplay = Red_Hat_Display({
+  weight: ['400', '500', '700', '900'],
+  subsets: ['latin'],
+  variable: '--font-red-hat',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -23,11 +33,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="fr" className={`${geistSans.variable} ${geistMono.variable} ${redHatDisplay.variable} antialiased`}>
+      <body className="min-h-screen bg-gray-900 text-white">
+        <MainNav />
+        <main className="mx-auto max-w-7xl p-4 md:p-6">
+          {children}
+          <Toaster position="top-right" richColors closeButton />
+        </main>
       </body>
     </html>
   );
