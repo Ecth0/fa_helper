@@ -26,7 +26,7 @@ async function readProfiles() {
 
 export async function GET(
   request: Request,
-  context: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await context.params;
   const list = await readProfiles();
