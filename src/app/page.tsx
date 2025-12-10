@@ -34,29 +34,7 @@ const spotlightTips = [
   "Indique objectifs ligue, langues et disponibilites.",
 ]
 
-const featuredPlayers = [
-  {
-    pseudo: "NoxianEdge",
-    role: "Top",
-    rank: "Grandmaster 580 LP",
-    style: "Weakside anchor",
-    looking: "ERL mixte",
-  },
-  {
-    pseudo: "BlueTempo",
-    role: "Jungle",
-    rank: "Master 350 LP",
-    style: "Tempo / invade early",
-    looking: "LFL Div2",
-  },
-  {
-    pseudo: "Lumen",
-    role: "Mid",
-    rank: "Challenger 720 LP",
-    style: "Control mage shotcaller",
-    looking: "ERL academie",
-  },
-]
+const featuredPlayers: any[] = []
 
 const trendingTeams = [
   {

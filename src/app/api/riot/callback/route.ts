@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     response.cookies.set("riot_oauth_nonce", "", { path: "/", maxAge: 0 });
     response.cookies.set("riot_pkce_verifier", "", { path: "/", maxAge: 0 });
     
-    // Définir un cookie de session sécurisé
+    // Définir un cookie de session sécurisé (auth_session)
     response.cookies.set("auth_session", JSON.stringify({
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
@@ -111,6 +111,19 @@ export async function GET(request: NextRequest) {
         gameName: userInfo.name,
         tagLine: userInfo.tagline
       }
+    }), {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: tokens.expires_in
+    });
+
+    // Définir aussi le cookie fa_helper_session attendu par le front
+    response.cookies.set("fa_helper_session", JSON.stringify({
+      puuid: userInfo.sub,
+      gameName: userInfo.name,
+      tagLine: userInfo.tagline
     }), {
       path: "/",
       httpOnly: true,

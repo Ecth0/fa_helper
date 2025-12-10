@@ -22,6 +22,26 @@ interface ProfileData {
   qualities: string[];
   roles: string[];
   vods: VOD[];
+  riot?: {
+    iconUrl?: string;
+    iconId?: number | string;
+    platform?: string;
+    routingRegion?: string;
+    puuid?: string;
+    summonerId?: string;
+    accountId?: string;
+    summonerLevel?: number;
+    rank?: string;
+    soloRank?: string;
+    flexRank?: string;
+    bestSoloRank?: string;
+    bestFlexRank?: string;
+    championMasteries?: any[];
+    masteryScore?: number;
+    leagueEntries?: any[];
+    recentMatchIds?: string[];
+    recentMatchDetails?: any[];
+  };
 }
 
 export default function ProfilePage() {
@@ -42,6 +62,22 @@ export default function ProfilePage() {
 
   // Charger le profil depuis localStorage au montage
   useEffect(() => {
+    // Charger session (auth Riot)
+    const loadSession = async () => {
+      try {
+        const res = await fetch('/api/session', { cache: 'no-store' });
+        if (res.ok) {
+          const js = await res.json();
+          if (js?.session?.puuid) {
+            setProfile((prev) => ({ ...prev, riot: { ...prev.riot, puuid: js.session.puuid, gameName: js.session.gameName, tagLine: js.session.tagLine } }));
+          }
+        }
+      } catch (e) {
+        console.warn('Impossible de récupérer la session', e);
+      }
+    };
+    loadSession();
+
     const storedProfile = localStorage.getItem('playerProfile');
     if (storedProfile) {
       try {
@@ -52,6 +88,7 @@ export default function ProfilePage() {
           qualities: Array.isArray(parsed.qualities) ? parsed.qualities : [],
           roles: Array.isArray(parsed.roles) ? parsed.roles : [],
           vods: Array.isArray(parsed.vods) ? parsed.vods : [],
+          riot: parsed.riot,
         };
         setProfile(normalized);
       } catch (error) {
@@ -177,26 +214,64 @@ export default function ProfilePage() {
     setIsSaving(true);
     try {
       // Sauvegarder dans localStorage
-      localStorage.setItem('playerProfile', JSON.stringify(profile));
+      // Conserver les données Riot existantes si elles ne sont pas éditées ici
+      const stored = localStorage.getItem('playerProfile');
+      let riotMeta = profile.riot;
+      if (!riotMeta && stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          riotMeta = parsed.riot || undefined;
+        } catch (e) {
+          console.error('Impossible de récupérer riotMeta existant', e);
+        }
+      }
 
-      // Ajouter aussi dans la liste de profils (playerProfiles) pour la page liste
+      const toSave = { ...profile, riot: riotMeta };
+
+      // Sauvegarde locale
+      localStorage.setItem('playerProfile', JSON.stringify(toSave));
+
+      // Récupérer puuid (session ou riotMeta) pour l'enregistrement serveur
+      let puuid = toSave.riot?.puuid;
+      if (!puuid) {
+        try {
+          const sres = await fetch('/api/session', { cache: 'no-store' });
+          if (sres.ok) {
+            const js = await sres.json();
+            puuid = js?.session?.puuid || puuid;
+          }
+        } catch (e) {
+          console.warn('Impossible de récupérer la session', e);
+        }
+      }
+
+      const toSend = puuid ? { ...toSave, puuid } : toSave;
+
+      // Sauvegarde serveur
+      try {
+        await fetch('/api/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(toSend),
+        });
+      } catch (err) {
+        console.error('Erreur sauvegarde serveur', err);
+      }
+
+      // Cache local playerProfiles
       try {
         const stored = localStorage.getItem('playerProfiles');
         const arr = stored ? JSON.parse(stored) : [];
-        // éviter les doublons basés sur le nom
         const existingIndex = arr.findIndex((p: any) => p.name === profile.name);
         if (existingIndex >= 0) {
-          arr[existingIndex] = profile;
+          arr[existingIndex] = toSave;
         } else {
-          arr.push(profile);
+          arr.push(toSave);
         }
         localStorage.setItem('playerProfiles', JSON.stringify(arr));
       } catch (err) {
         console.error('Erreur lors de la mise à jour de playerProfiles:', err);
       }
-      
-      // Ici, vous pouvez faire un appel API pour sauvegarder le profil
-      // await fetch('/api/profile', { method: 'POST', body: JSON.stringify(profile) });
       
       toast.success('Profil sauvegardé avec succès !');
       // Redirection vers la page de visualisation
@@ -437,6 +512,32 @@ export default function ProfilePage() {
                     {profile.description || 'Non définie'}
                   </p>
                 </div>
+
+                {/* Infos Riot */}
+                {profile.riot && (
+                  <div className="space-y-2">
+                    <p className="text-gray-400 text-sm mb-1">Données Riot</p>
+                    <div className="text-sm text-gray-300 space-y-1">
+                      {profile.riot.soloRank && <div>SoloQ: <span className="text-yellow-300">{profile.riot.soloRank}</span></div>}
+                      {profile.riot.flexRank && <div>Flex: <span className="text-yellow-300">{profile.riot.flexRank}</span></div>}
+                      {!profile.riot.soloRank && profile.riot.rank && <div>Rang: <span className="text-yellow-300">{profile.riot.rank}</span></div>}
+                      {profile.riot.bestSoloRank && <div>Meilleur SoloQ: <span className="text-green-300">{profile.riot.bestSoloRank}</span></div>}
+                      {profile.riot.bestFlexRank && <div>Meilleur Flex: <span className="text-green-300">{profile.riot.bestFlexRank}</span></div>}
+                      {profile.riot.summonerLevel && <div>Niveau: {profile.riot.summonerLevel}</div>}
+                    </div>
+                    {(profile.riot.bestSoloRank || profile.riot.bestFlexRank) && (
+                      <div className="bg-gray-800 border border-gray-700 rounded p-3 space-y-1">
+                        <p className="text-gray-300 text-sm font-semibold">Peak Rank</p>
+                        {profile.riot.bestSoloRank && (
+                          <div className="text-xs text-green-300">SoloQ: {profile.riot.bestSoloRank}</div>
+                        )}
+                        {profile.riot.bestFlexRank && (
+                          <div className="text-xs text-green-300">Flex: {profile.riot.bestFlexRank}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Qualités */}
                 <div>

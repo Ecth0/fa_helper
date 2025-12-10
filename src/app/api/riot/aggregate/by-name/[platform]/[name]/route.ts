@@ -67,12 +67,24 @@ export async function GET(
 
     // 3) league entries
     let leagueEntries: any[] = [];
+    let soloRank: string | null = null;
+    let flexRank: string | null = null;
+    let rank: string | null = null;
     try {
       const leagueRes = await fetch(
         `https://${canonicalPlatform}.api.riotgames.com/lol/league/v4/entries/by-summoner/${encodeURIComponent(summonerId)}`,
         { headers: { 'X-Riot-Token': RIOT_API_KEY } }
       );
       if (leagueRes.ok) leagueEntries = await leagueRes.json();
+
+      const soloQueue = leagueEntries.find((entry: any) => entry.queueType === 'RANKED_SOLO_5x5');
+      const flexQueue = leagueEntries.find((entry: any) => entry.queueType === 'RANKED_FLEX_SR');
+      const anyQueue = leagueEntries[0];
+      const formatRank = (entry: any) => `${entry.tier} ${entry.rank} ${entry.leaguePoints} LP`;
+      if (soloQueue) soloRank = formatRank(soloQueue);
+      if (flexQueue) flexRank = formatRank(flexQueue);
+      const selected = soloQueue || flexQueue || anyQueue;
+      if (selected) rank = formatRank(selected);
     } catch (e) {
       console.warn('league entries lookup failed', e);
     }
@@ -125,6 +137,9 @@ export async function GET(
       activeShard,
       canonicalPlatform,
       leagueEntries,
+      rank,
+      soloRank,
+      flexRank,
       championMasteries,
       masteryScore,
       recentMatchIds,

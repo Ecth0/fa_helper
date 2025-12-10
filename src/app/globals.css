@@ -1,6 +1,29 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+:root {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --radius: 0.5rem;
+}
+
 @layer base {
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-red-hat), var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -47,6 +70,112 @@
   
   body {
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #0c1020;
+    color: #e6e9f5;
+  }
+
+  /* Styles personnalisés pour les boutons */
+  .btn {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+  }
+  
+  .btn:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+    --tw-ring-opacity: 1;
+    --tw-ring-color: rgb(212 212 216 / var(--tw-ring-opacity));
+    --tw-ring-offset-width: 2px;
+  }
+  
+  .btn:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .btn-primary {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .btn-primary:hover {
+    background-color: hsla(var(--muted) / 0.8);
+    border-color: hsla(var(--border) / 0.8);
+  }
+
+  .btn-secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .btn-secondary:hover {
+    background-color: hsla(var(--secondary) / 0.8);
+    border-color: hsla(var(--border) / 0.8);
+  }
+
+  .btn-outline {
+    border: 1px solid hsl(var(--input));
+    background-color: transparent;
+  }
+  
+  .btn-outline:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  .btn-ghost:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  .btn-link {
+    color: hsl(var(--primary));
+    text-underline-offset: 4px;
+  }
+  
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  .btn-destructive {
+    background-color: hsla(var(--destructive) / 0.2);
+    color: hsl(var(--destructive-foreground));
+    border: 1px solid hsla(var(--destructive) / 0.3);
+  }
+  
+  .btn-destructive:hover {
+    background-color: hsla(var(--destructive) / 0.3);
+    border-color: hsla(var(--destructive) / 0.4);
+  }
+
+  /* Palette overrides */
+  .bg-gray-900 { background-color: #0f1529 !important; }
+  .bg-gray-800 { background-color: #0b1022 !important; }
+  .bg-gray-700 { background-color: #141c35 !important; }
+  .border-gray-900,
+  .border-gray-800 { border-color: rgba(255,255,255,0.06) !important; }
+  .border-gray-700 { border-color: rgba(255,255,255,0.12) !important; }
+  .text-gray-400 { color: #c7cee3 !important; }
+  .text-gray-300 { color: #d7def0 !important; }
+  .text-gray-500 { color: #8f9abc !important; }
+  .bg-blue-600 { background-color: #1e4fd8 !important; }
+  .bg-blue-700 { background-color: #183fae !important; }
+  .bg-red-600 { background-color: #f5515f !important; }
+  .bg-red-700 { background-color: #d0424d !important; }
+  .bg-green-600 { background-color: #2abf88 !important; }
+  .bg-green-700 { background-color: #22986d !important; }
+  .shadow-soft {
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04);
   }
 }
 

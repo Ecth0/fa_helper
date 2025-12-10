@@ -12,15 +12,66 @@ interface RiotProfile {
   tagLine: string;
 }
 
+// Convertit un rang "GOLD I 50 LP" en score pour comparaison (pour suivre le meilleur rang atteint)
+const rankToScore = (rankStr?: string | null) => {
+  if (!rankStr) return -1;
+  const parts = rankStr.split(' ');
+  if (parts.length < 2) return -1;
+  const tier = parts[0]?.toUpperCase();
+  const div = parts[1]?.toUpperCase();
+  const tiers = ['IRON','BRONZE','SILVER','GOLD','PLATINUM','EMERALD','DIAMOND','MASTER','GRANDMASTER','CHALLENGER'];
+  const tIdx = tiers.indexOf(tier);
+  if (tIdx === -1) return -1;
+  const divMap: Record<string, number> = { 'I': 3, 'II': 2, 'III': 1, 'IV': 0 };
+  const divScore = divMap[div] ?? 0;
+  return tIdx * 10 + divScore;
+};
+
+const pickBestRank = (prev?: string | null, next?: string | null) => {
+  const p = rankToScore(prev);
+  const n = rankToScore(next);
+  return n > p ? next : prev;
+};
+
 export default function CreateProfilePage() {
   const router = useRouter();
   const [gameName, setGameName] = useState('');
   const [tagLine, setTagLine] = useState('');
-  const [region, setRegion] = useState('EUW'); // Valeur par défaut
+  const [region, setRegion] = useState('EUW');
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<RiotProfile | null>(null);
   const [error, setError] = useState('');
   const [existingProfile, setExistingProfile] = useState<any | null>(null);
+  const [session, setSession] = useState<{ puuid?: string | null }>({ puuid: null });
+
+  // Fonction pour mapper les tags de région vers les plateformes Riot
+  const mapTagToPlatform = (tag: string): string => {
+    const t = (tag || '').toString().trim().toUpperCase();
+    const mapping: Record<string, string> = {
+      'EUW': 'euw1',
+      'EUNE': 'eun1',
+      'NA': 'na1',
+      'KR': 'kr',
+      'BR': 'br1',
+      'OCE': 'oc1',
+      'JP': 'jp1',
+      'RU': 'ru',
+      'LAN': 'la1',
+      'LAS': 'la2',
+      'TR': 'tr1',
+    };
+    return mapping[t] || t.toLowerCase();
+  };
+
+  // Fonction pour mapper les plateformes vers les régions routing
+  const mapPlatformToRoutingRegion = (platform: string): string => {
+    const p = platform.toLowerCase();
+    if (['na1', 'br1', 'la1', 'la2'].includes(p)) return 'americas';
+    if (['kr', 'jp1'].includes(p)) return 'asia';
+    if (['euw1', 'eun1', 'tr1', 'ru'].includes(p)) return 'europe';
+    if (['oc1'].includes(p)) return 'sea';
+    return 'americas'; // fallback
+  };
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -30,108 +81,306 @@ export default function CreateProfilePage() {
       return;
     }
 
+    setIsLoading(true);
     setError('');
-    // Just set the profile to show confirmation - actual validation happens during creation
-    setProfile({ gameName, tagLine });
-    toast.success('Informations validées !');
+    
+    try {
+      const platform = mapTagToPlatform(region);
+      const routingRegion = mapPlatformToRoutingRegion(platform);
+      
+      // Étape 1: Récupérer le PUUID via RIOT ID API
+      console.log(`Recherche PUUID pour ${gameName}#${tagLine} dans la région ${routingRegion}`);
+      
+      const accountResponse = await fetch(
+        `https://${routingRegion}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
+        {
+          headers: {
+            'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+          }
+        }
+      );
+
+      if (!accountResponse.ok) {
+        if (accountResponse.status === 404) {
+          throw new Error('Compte Riot introuvable. Vérifiez le nom de jeu et le tag.');
+        }
+        throw new Error(`Erreur API Riot: ${accountResponse.status}`);
+      }
+
+      const accountData = await accountResponse.json();
+      // Si session déjà connue (auth Riot), prioriser cette puuid pour éviter les collisions
+      const puuid = session?.puuid || accountData.puuid;
+      
+      console.log('PUUID trouvé:', puuid);
+
+      // Étape 2: Récupérer les informations du summoner via PUUID
+      const summonerResponse = await fetch(
+        `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+        {
+          headers: {
+            'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+          }
+        }
+      );
+
+      if (!summonerResponse.ok) {
+        throw new Error('Impossible de récupérer les informations du summoner');
+      }
+
+      const summonerData = await summonerResponse.json();
+      console.log('Données summoner:', summonerData);
+
+      setProfile({ gameName, tagLine });
+      toast.success('Compte Riot trouvé !');
+      
+    } catch (err: any) {
+      console.error('Erreur lors de la recherche:', err);
+      setError(err.message || 'Erreur lors de la recherche du compte');
+      toast.error(err.message || 'Erreur lors de la recherche');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCreateProfile = () => {
+  const handleCreateProfile = async () => {
     if (existingProfile) {
       toast.error('Un profil existe déjà. Vous ne pouvez pas en créer un autre.');
       return;
     }
-    // Récupérer l'icône summoner via notre API interne
-    (async () => {
-      try {
-        // Map simple region tag to Riot platform routing (e.g. EUW -> euw1)
-        const mapTagToPlatform = (tag: string) => {
-          const t = (tag || '').toString().trim().toUpperCase();
-          const m: Record<string, string> = {
-            'EUW': 'euw1',
-            'EUNE': 'eun1',
-            'NA': 'na1',
-            'KR': 'kr',
-            'BR': 'br1',
-            'OCE': 'oc1',
-            'JP': 'jp1',
-            'RU': 'ru',
-            'LAN': 'la1',
-            'LAS': 'la2',
-          };
-          return m[t] || t.toLowerCase();
-        };
 
-        const platform = mapTagToPlatform(region);
-        // Use aggregate endpoint with gameName#tagLine format to fetch all summoner data
-        const res = await fetch(`/api/riot/aggregate/by-name/${encodeURIComponent(platform)}/${encodeURIComponent(gameName)}%23${encodeURIComponent(tagLine)}`);
-        let riotMeta: any = undefined;
-        if (res.ok) {
-          const data = await res.json();
-          console.log('Aggregate response data:', data);
-          console.log('data.summoner:', data.summoner);
-          console.log('data.summoner?.id:', data.summoner?.id);
-          console.log('data.canonicalPlatform:', data.canonicalPlatform);
-          
-          // Extract highest rank (solo > flex)
-          let rank = 'Unranked';
-          if (Array.isArray(data.leagueEntries) && data.leagueEntries.length > 0) {
-            const solo = data.leagueEntries.find((e: any) => e.queueType === 'RANKED_SOLO_5x5');
-            const ranked = solo || data.leagueEntries[0];
-            if (ranked) {
-              rank = `${ranked.tier || 'Unranked'} ${ranked.rank || ''} ${ranked.leaguePoints || 0} LP`;
+    setIsLoading(true);
+    
+    try {
+      const platform = mapTagToPlatform(region);
+      const routingRegion = mapPlatformToRoutingRegion(platform);
+      
+      // Étape 1: Récupérer le PUUID
+      const accountResponse = await fetch(
+        `https://${routingRegion}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`,
+        {
+          headers: {
+            'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+          }
+        }
+      );
+
+      if (!accountResponse.ok) {
+        throw new Error('Impossible de récupérer le compte Riot');
+      }
+
+      const accountData = await accountResponse.json();
+      const puuid = accountData.puuid;
+
+      // Étape 2: Récupérer les informations du summoner
+      const summonerResponse = await fetch(
+        `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+        {
+          headers: {
+            'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+          }
+        }
+      );
+
+      if (!summonerResponse.ok) {
+        throw new Error('Impossible de récupérer les informations du summoner');
+      }
+
+      const summonerData = await summonerResponse.json();
+
+      // Étape 3: Récupérer le rang (SoloQ et Flex)
+      let rank = 'Unranked';
+      let soloRank = 'Unranked';
+      let flexRank = 'Unranked';
+      try {
+        // Utiliser l'API interne (clé serveur) pour éviter les limites côté client
+        const aggRes = await fetch(`/api/riot/aggregate/by-name/${platform}/${encodeURIComponent(`${gameName}#${tagLine}`)}`);
+        if (aggRes.ok) {
+          const agg = await aggRes.json();
+          soloRank = agg.soloRank || 'Unranked';
+          flexRank = agg.flexRank || 'Unranked';
+          rank = agg.rank || soloRank || flexRank || 'Unranked';
+        } else {
+          console.warn('Aggregate league status', aggRes.status);
+        }
+      } catch (err) {
+        console.warn('Impossible de récupérer le rang via aggregate:', err);
+      }
+
+      // Étape 4: Récupérer les masteries (optionnel)
+      let championMasteries: any[] = [];
+      let masteryScore = 0;
+      try {
+        const masteryResponse = await fetch(
+          `https://${platform}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}`,
+          {
+            headers: {
+              'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
             }
           }
-          riotMeta = {
-            iconUrl: data.summoner ? `https://ddragon.leagueoflegends.com/cdn/12.23.1/img/profileicon/${data.summoner.profileIconId}.png` : undefined,
-            iconId: data.summoner?.profileIconId,
-            summoner: data.summoner,
-            puuid: data.summoner?.puuid,
-            summonerId: data.summoner?.id,
-            platform: data.canonicalPlatform,
-            activeShard: data.activeShard,
-            leagueEntries: data.leagueEntries,
-            championMasteries: data.championMasteries,
-            masteryScore: data.masteryScore,
-            recentMatchIds: data.recentMatchIds,
-            rank,
-          };
-          console.log('riotMeta:', riotMeta);
-          console.log('riotMeta.summonerId:', riotMeta.summonerId);
-          console.log('riotMeta.platform:', riotMeta.platform);
+        );
+
+        if (masteryResponse.ok) {
+          championMasteries = await masteryResponse.json();
+          
+          // Récupérer le score total
+          const scoreResponse = await fetch(
+            `https://${platform}.api.riotgames.com/lol/champion-mastery/v4/scores/by-puuid/${puuid}`,
+            {
+              headers: {
+                'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+              }
+            }
+          );
+          
+          if (scoreResponse.ok) {
+            masteryScore = await scoreResponse.json();
+          }
         }
-
-        const profileObj: any = {
-          name: gameName,
-          riot: riotMeta,
-          description: riotMeta?.summoner?.profileIconId ? `Level ${riotMeta.summoner.summonerLevel}` : '',
-          qualities: [],
-          roles: [],
-          vods: [],
-        };
-
-        // Save as playerProfile and upsert into playerProfiles
-        localStorage.setItem('playerProfile', JSON.stringify(profileObj));
-        try {
-          const list = localStorage.getItem('playerProfiles');
-          const arr = list ? JSON.parse(list) : [];
-          const idx = arr.findIndex((p: any) => p.name === profileObj.name);
-          if (idx >= 0) arr[idx] = profileObj; else arr.push(profileObj);
-          localStorage.setItem('playerProfiles', JSON.stringify(arr));
-        } catch (e) {
-          console.error('Erreur lors de la mise à jour de playerProfiles', e);
-        }
-
-        toast.success('Profil créé avec succès !');
-        setTimeout(() => router.push('/profile'), 800);
-      } catch (e) {
-        console.error('Erreur création profil:', e);
-        toast.error('Erreur lors de la création du profil');
+      } catch (err) {
+        console.warn('Impossible de récupérer les masteries:', err);
       }
-    })();
+
+      // Étape 5: Récupérer l'historique de matchs (IDs)
+      let recentMatchIds: string[] = [];
+      try {
+        const matchHistoryResponse = await fetch(
+          `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?start=0&count=5`,
+          {
+            headers: {
+              'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+            }
+          }
+        );
+        if (matchHistoryResponse.ok) {
+          recentMatchIds = await matchHistoryResponse.json();
+        }
+      } catch (err) {
+        console.warn('Impossible de récupérer l’historique de matchs:', err);
+      }
+
+      // Étape 6: Récupérer le détail des matchs (limité aux 5 premiers)
+      const matchDetails: any[] = [];
+      for (const matchId of recentMatchIds.slice(0, 5)) {
+        try {
+          const matchRes = await fetch(
+            `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(matchId)}`,
+            {
+              headers: {
+                'X-Riot-Token': process.env.NEXT_PUBLIC_RIOT_API_KEY || ''
+              }
+            }
+          );
+          if (matchRes.ok) {
+            const detail = await matchRes.json();
+            matchDetails.push(detail);
+          }
+        } catch (err) {
+          console.warn(`Impossible de récupérer le détail du match ${matchId}:`, err);
+        }
+      }
+
+      // Construire l'objet profil complet
+      const previousBestSolo = existingProfile?.riot?.bestSoloRank;
+      const previousBestFlex = existingProfile?.riot?.bestFlexRank;
+      const bestSoloRank = pickBestRank(previousBestSolo, soloRank);
+      const bestFlexRank = pickBestRank(previousBestFlex, flexRank);
+
+      const riotMeta = {
+        puuid: puuid,
+        summonerId: summonerData.id,
+        accountId: summonerData.accountId,
+        platform: platform,
+        routingRegion: routingRegion,
+        iconUrl: `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${summonerData.profileIconId}.png`,
+        iconId: summonerData.profileIconId,
+        summonerLevel: summonerData.summonerLevel,
+        rank: rank,
+        soloRank,
+        flexRank,
+        bestSoloRank,
+        bestFlexRank,
+        championMasteries: championMasteries.slice(0, 10), // Top 10
+        masteryScore: masteryScore,
+        recentMatchIds,
+        recentMatchDetails: matchDetails,
+      };
+
+      const profileObj = {
+        puuid,
+        name: `${gameName}#${tagLine}`,
+        gameName: gameName,
+        tagLine: tagLine,
+        riot: riotMeta,
+        description: `Level ${summonerData.summonerLevel} - ${rank}`,
+        qualities: [],
+        roles: [],
+        vods: [],
+      };
+
+      console.log('Profil créé:', profileObj);
+
+      // Sauvegarder le profil local + session + serveur
+      localStorage.setItem('playerProfile', JSON.stringify(profileObj));
+      try {
+        await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ puuid, gameName, tagLine }),
+        });
+      } catch (err) {
+        console.warn('Impossible de sauvegarder la session', err);
+      }
+      try {
+        await fetch('/api/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileObj),
+        });
+      } catch (err) {
+        console.warn('Impossible de sauvegarder le profil sur le serveur', err);
+      }
+      
+      // Ajouter à la liste des profils
+      try {
+        const list = localStorage.getItem('playerProfiles');
+        const arr = list ? JSON.parse(list) : [];
+        const idx = arr.findIndex((p: any) => p.name === profileObj.name);
+        if (idx >= 0) {
+          arr[idx] = profileObj;
+        } else {
+          arr.push(profileObj);
+        }
+        localStorage.setItem('playerProfiles', JSON.stringify(arr));
+      } catch (e) {
+        console.error('Erreur lors de la mise à jour de playerProfiles', e);
+      }
+
+      toast.success('Profil créé avec succès !');
+      setTimeout(() => router.push('/profile'), 800);
+      
+    } catch (err: any) {
+      console.error('Erreur création profil:', err);
+      toast.error(err.message || 'Erreur lors de la création du profil');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
+    // récupérer session (auth Riot)
+    const loadSession = async () => {
+      try {
+        const res = await fetch('/api/session', { cache: 'no-store' });
+        if (res.ok) {
+          const js = await res.json();
+          if (js?.session) setSession(js.session);
+        }
+      } catch (e) {
+        console.warn('Impossible de récupérer la session', e);
+      }
+    };
+    loadSession();
+
     const stored = localStorage.getItem('playerProfile');
     if (stored) {
       try {
@@ -147,7 +396,6 @@ export default function CreateProfilePage() {
     if (!confirm('Voulez-vous vraiment supprimer votre profil existant ?')) return;
     try {
       localStorage.removeItem('playerProfile');
-      // Also clean playerProfiles entry
       const list = localStorage.getItem('playerProfiles');
       if (list) {
         try {
@@ -165,6 +413,7 @@ export default function CreateProfilePage() {
       toast.error('Erreur lors de la suppression du profil');
     }
   };
+
   return (
     <div className="space-y-8">
       {/* Section Vidéo de présentation */}
@@ -177,16 +426,9 @@ export default function CreateProfilePage() {
             </p>
           </div>
           
-          {/* Conteneur de la vidéo */}
           <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-            {/* Remplacez cette div par votre lecteur vidéo ou iframe */}
             <div className="w-full h-full flex items-center justify-center bg-gray-800">
               <p className="text-gray-400">Vidéo de présentation FA Helper</p>
-              {/* Exemple avec une vidéo : */}
-              {/* <video className="w-full h-full" controls>
-                <source src="/videos/fa-helper-presentation.mp4" type="video/mp4" />
-                Votre navigateur ne supporte pas la lecture de vidéos.
-              </video> */}
             </div>
           </div>
         </div>
@@ -246,7 +488,7 @@ export default function CreateProfilePage() {
                       type="text"
                       value={tagLine}
                       onChange={(e) => setTagLine(e.target.value)}
-                      placeholder="Entrez votre tag (ex: XXXX)"
+                      placeholder="Entrez votre tag (ex: EUW)"
                       className="bg-gray-800 border-gray-700 text-white"
                       disabled={isLoading}
                     />
@@ -273,13 +515,14 @@ export default function CreateProfilePage() {
                       <option value="RU">RU (Russie)</option>
                       <option value="KR">KR (Corée)</option>
                       <option value="JP">JP (Japon)</option>
+                      <option value="TR">TR (Turquie)</option>
                     </select>
                   </div>
                   
                   <Button
                     onClick={handleSearch}
                     className="w-full bg-red-600 hover:bg-red-700"
-                    disabled={isLoading || !tagLine || !region}
+                    disabled={isLoading || !gameName || !tagLine || !region}
                   >
                     {isLoading ? 'Recherche...' : 'Rechercher'}
                   </Button>
@@ -301,8 +544,9 @@ export default function CreateProfilePage() {
                     <Button 
                       onClick={handleCreateProfile}
                       className="w-full mt-4 bg-green-600 hover:bg-green-700"
+                      disabled={isLoading}
                     >
-                      Créer mon profil
+                      {isLoading ? 'Création...' : 'Créer mon profil'}
                     </Button>
                   </div>
                 </div>
