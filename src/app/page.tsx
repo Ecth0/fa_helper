@@ -61,28 +61,7 @@ const roles = ["Top", "Jungle", "Mid", "ADC", "Support", "Staff"]
 const ranks = ["Diamant", "Master", "Grandmaster", "Challenger"]
 
 function HeroSearch() {
-  return (
-    <section className="border border-gray-700 bg-gray-900 p-6 mb-8">
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="max-w-2xl space-y-3">
-          <p className="text-xs uppercase tracking text-red-400">
-            League of Legends Talent Network
-          </p>
-          <h1 className="text-3xl font-semibold text-white">
-            Le LinkedIn des joueurs et staffs LoL ambitieux
-          </h1>
-          <p className="text-gray-300">
-            Centralise profils, équipes et scrims. Trouve ta prochaine line-up ou recrute le joueur parfait
-            avec stats live et disponibilités partagées.
-          </p>
-        </div>
-        <div className="p-4 border border-gray-700 bg-gray-800">
-          <p className="text-sm text-gray-300">Matchs et scrims programmés</p>
-          <p className="text-2xl font-semibold text-red-500">12</p>
-        </div>
-      </div>
-    </section>
-  )
+  return null;
 }
 
 function QuickActions() {
@@ -246,16 +225,29 @@ function SidePanel() {
 
 export default function Home() {
   return (
-    <div className="space-y-8">
-      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
-        <div className="max-w-3xl">
-          <p className="text-xs uppercase tracking text-red-400">Bienvenue sur</p>
-          <h1 className="text-3xl font-bold text-white md:text-4xl">FA Helper</h1>
-          <p className="mt-2 text-gray-300">
-            La plateforme pour les joueurs et équipes compétitives de League of Legends
-          </p>
+      <div className="space-y-8">
+        <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking text-red-400">Bienvenue sur</p>
+              <h1 className="text-3xl font-bold text-white md:text-4xl">FA Helper</h1>
+              <p className="mt-2 text-gray-300">
+                La plateforme pour les joueurs et équipes compétitives de League of Legends
+              </p>
+              <h2 className="mt-4 text-2xl font-semibold text-white">
+                Le LinkedIn des joueurs et staffs LoL ambitieux
+              </h2>
+              <p className="mt-2 text-gray-300">
+                Centralise profils, équipes et scrims. Trouve ta prochaine line-up ou recrute le joueur parfait
+                avec stats live et disponibilités partagées.
+              </p>
+            </div>
+            <div className="p-4 border border-gray-700 bg-gray-800 rounded-lg mt-4 md:mt-0">
+              <p className="text-sm text-gray-300">Matchs et scrims programmés</p>
+              <p className="text-2xl font-semibold text-red-500">12</p>
+            </div>
+          </div>
         </div>
-      </div>
 
         <div className="space-y-8">
           <HeroSearch />
