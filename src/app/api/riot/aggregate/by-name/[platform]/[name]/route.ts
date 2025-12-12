@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 // Aggregates useful Riot info for a player using gameName + tagLine + platform
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { platform: string; name: string } }
 ) {
-  const { platform, name } = await params as { platform: string; name: string };
+  const { platform, name } = params;
   const RIOT_API_KEY = 'RGAPI-53a84f11-29d4-44e7-bba6-e00110be4058';
 
   if (!platform || !name) {
