@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 // Aggregates useful Riot info for a player using gameName + tagLine + platform
 export async function GET(
-  request: Request,
-  { params }: { params: { platform: string; name: string } }
+  request: NextRequest,
+  context: { params: Promise<{ platform: string; name: string }> }
 ) {
-  const { platform, name } = await params as { platform: string; name: string };
+  const { platform, name } = await context.params;
   const RIOT_API_KEY = 'RGAPI-53a84f11-29d4-44e7-bba6-e00110be4058';
 
   if (!platform || !name) {
@@ -67,12 +68,24 @@ export async function GET(
 
     // 3) league entries
     let leagueEntries: any[] = [];
+    let soloRank: string | null = null;
+    let flexRank: string | null = null;
+    let rank: string | null = null;
     try {
       const leagueRes = await fetch(
         `https://${canonicalPlatform}.api.riotgames.com/lol/league/v4/entries/by-summoner/${encodeURIComponent(summonerId)}`,
         { headers: { 'X-Riot-Token': RIOT_API_KEY } }
       );
       if (leagueRes.ok) leagueEntries = await leagueRes.json();
+
+      const soloQueue = leagueEntries.find((entry: any) => entry.queueType === 'RANKED_SOLO_5x5');
+      const flexQueue = leagueEntries.find((entry: any) => entry.queueType === 'RANKED_FLEX_SR');
+      const anyQueue = leagueEntries[0];
+      const formatRank = (entry: any) => `${entry.tier} ${entry.rank} ${entry.leaguePoints} LP`;
+      if (soloQueue) soloRank = formatRank(soloQueue);
+      if (flexQueue) flexRank = formatRank(flexQueue);
+      const selected = soloQueue || flexQueue || anyQueue;
+      if (selected) rank = formatRank(selected);
     } catch (e) {
       console.warn('league entries lookup failed', e);
     }
@@ -125,6 +138,9 @@ export async function GET(
       activeShard,
       canonicalPlatform,
       leagueEntries,
+      rank,
+      soloRank,
+      flexRank,
       championMasteries,
       masteryScore,
       recentMatchIds,

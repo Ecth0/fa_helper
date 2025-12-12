@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { platform: string; id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ platform: string; id: string }> }
 ) {
-  const { platform, id } = await params as { platform: string; id: string };
+  const { platform, id } = await context.params;
   const RIOT_API_KEY = 'RGAPI-53a84f11-29d4-44e7-bba6-e00110be4058';
 
   if (!platform || !id) {

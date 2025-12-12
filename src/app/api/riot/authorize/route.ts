@@ -14,9 +14,14 @@ function sha256(input: string): string {
   return base64UrlEncode(digest);
 }
 
+const RIOT_CLIENT_ID = 'a9f0b1d4-1e5f-4c3d-9b3a-8e1f2b4c5d6e'; // Remplacez par votre Client ID Riot
+const REDIRECT_URI = 'http://localhost:3000/api/riot/callback'; // Mettez à jour avec votre URL de redirection
+const RESPONSE_TYPE = 'code';
+const SCOPE = 'openid';
+
 export async function GET(request: NextRequest) {
-  const clientId = process.env.RIOT_CLIENT_ID;
-  const redirectUri = process.env.RIOT_REDIRECT_URI; // e.g. https://yourapp.com/api/riot/callback
+  const clientId = RIOT_CLIENT_ID;
+  const redirectUri = REDIRECT_URI;
   const authorizeUrl = process.env.RIOT_AUTH_URL || "https://auth.riotgames.com/authorize";
 
   if (!clientId || !redirectUri) {
