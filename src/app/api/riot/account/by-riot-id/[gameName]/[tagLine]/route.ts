@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameName: string; tagLine: string } }
+  { params }: { params: Promise<{ gameName: string; tagLine: string }> }
 ) {
-  const { gameName, tagLine } = params;
+  const { gameName, tagLine } = await params;
   const RIOT_API_KEY = 'RGAPI-53a84f11-29d4-44e7-bba6-e00110be4058';
 
   if (!gameName || !tagLine) {
