@@ -6,6 +6,11 @@ export async function DELETE(
   context: { params: Promise<{ puuid: string }> }
 ) {
   try {
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check environment variables.');
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const { puuid } = await context.params;
     if (!puuid) {
       return NextResponse.json({ error: 'puuid is required' }, { status: 400 });

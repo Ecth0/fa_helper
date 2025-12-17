@@ -16,6 +16,11 @@ export async function GET(
   context: { params: Promise<{ slug: string }> }
 ) {
   try {
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check environment variables.');
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const { slug } = await context.params;
     
     // Récupérer tous les profils et chercher par slug
