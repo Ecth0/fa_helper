@@ -111,6 +111,7 @@ export default function ProfilesListPage() {
         const res = await fetch('/api/profiles', { cache: 'no-store' });
         if (res.ok) {
           const list = await res.json();
+          console.log('📋 Profiles fetched from API:', list);
           if (Array.isArray(list) && list.length > 0) {
             if (currentSession?.puuid) {
               const mineIdx = list.findIndex((p: any) => p?.puuid === currentSession.puuid);

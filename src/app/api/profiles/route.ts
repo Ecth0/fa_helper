@@ -8,16 +8,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
+    console.log('🔍 Fetching profiles from Supabase...');
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching profiles:', error);
-      return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 });
+      console.error('❌ Error fetching profiles:', error);
+      return NextResponse.json({ 
+        error: 'Failed to fetch profiles', 
+        details: error.message,
+        code: error.code 
+      }, { status: 500 });
     }
 
+    console.log(`✅ Found ${data?.length || 0} profiles in database`);
     const list = data || [];
     
     // Alléger la charge pour l'affichage liste : ne renvoyer que des métadonnées légères
@@ -122,34 +128,51 @@ export async function POST(request: Request) {
       riot: body.riot || null,
     };
 
-    // Vérifier si le profil existe déjà
-    const { data: existing } = await supabase
+    // Vérifier si le profil existe déjà (utiliser maybeSingle pour éviter les erreurs si non trouvé)
+    const { data: existing, error: checkError } = await supabase
       .from('profiles')
       .select('puuid')
       .eq('puuid', body.puuid)
-      .single();
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error checking existing profile:', checkError);
+      return NextResponse.json({ error: 'Failed to check profile', details: checkError.message }, { status: 500 });
+    }
 
     if (existing) {
       // Mise à jour
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update(profileData)
         .eq('puuid', body.puuid);
 
-      if (error) {
-        console.error('Error updating profile:', error);
-        return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        return NextResponse.json({ 
+          error: 'Failed to update profile', 
+          details: updateError.message,
+          code: updateError.code 
+        }, { status: 500 });
       }
+      console.log('✅ Profile updated successfully:', body.puuid);
     } else {
       // Insertion
-      const { error } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from('profiles')
-        .insert([profileData]);
+        .insert([profileData])
+        .select();
 
-      if (error) {
-        console.error('Error inserting profile:', error);
-        return NextResponse.json({ error: 'Failed to insert profile' }, { status: 500 });
+      if (insertError) {
+        console.error('❌ Error inserting profile:', insertError);
+        return NextResponse.json({ 
+          error: 'Failed to insert profile', 
+          details: insertError.message,
+          code: insertError.code,
+          hint: insertError.hint 
+        }, { status: 500 });
       }
+      console.log('✅ Profile inserted successfully:', body.puuid, insertedData);
     }
 
     return NextResponse.json({ ok: true });

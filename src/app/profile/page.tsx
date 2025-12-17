@@ -286,13 +286,22 @@ export default function ProfilePage() {
 
       // Sauvegarde serveur
       try {
-        await fetch('/api/profiles', {
+        const response = await fetch('/api/profiles', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(toSend),
         });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('❌ Erreur lors de la sauvegarde du profil:', errorData);
+          toast.error(`Erreur sauvegarde: ${errorData.error || 'Erreur inconnue'}`);
+        } else {
+          console.log('✅ Profil sauvegardé avec succès sur le serveur');
+        }
       } catch (err) {
-        console.error('Erreur sauvegarde serveur', err);
+        console.error('❌ Erreur réseau lors de la sauvegarde du profil:', err);
+        toast.error('Erreur réseau lors de la sauvegarde');
       }
 
       // Cache local playerProfiles
