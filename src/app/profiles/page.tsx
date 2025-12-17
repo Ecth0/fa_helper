@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useCallback } from 'react';
 
 type Profile = {
+  puuid?: string;
   name: string;
   gameName?: string;
   tagLine?: string;

@@ -17,7 +17,46 @@ export async function GET() {
     
     // Alléger la charge pour l'affichage liste : ne renvoyer que des métadonnées légères
     const trimmed = list.map((p: any) => {
-      const riot = typeof p.riot === 'string' ? JSON.parse(p.riot) : p.riot;
+      // Supabase retourne généralement les JSONB comme objets, mais on vérifie quand même
+      let riot = p.riot;
+      if (typeof riot === 'string') {
+        try {
+          riot = JSON.parse(riot);
+        } catch (e) {
+          riot = null;
+        }
+      }
+
+      let qualities = p.qualities;
+      if (typeof qualities === 'string') {
+        try {
+          qualities = JSON.parse(qualities);
+        } catch (e) {
+          qualities = [];
+        }
+      }
+      if (!Array.isArray(qualities)) qualities = [];
+
+      let roles = p.roles;
+      if (typeof roles === 'string') {
+        try {
+          roles = JSON.parse(roles);
+        } catch (e) {
+          roles = [];
+        }
+      }
+      if (!Array.isArray(roles)) roles = [];
+
+      let vods = p.vods;
+      if (typeof vods === 'string') {
+        try {
+          vods = JSON.parse(vods);
+        } catch (e) {
+          vods = [];
+        }
+      }
+      if (!Array.isArray(vods)) vods = [];
+
       const lightDetails = Array.isArray(riot?.recentMatchDetails)
         ? riot.recentMatchDetails.slice(0, 2).map((m: any) => ({
             metadata: { matchId: m?.metadata?.matchId },
@@ -32,9 +71,9 @@ export async function GET() {
       
       return {
         ...p,
-        qualities: typeof p.qualities === 'string' ? JSON.parse(p.qualities) : p.qualities,
-        roles: typeof p.roles === 'string' ? JSON.parse(p.roles) : p.roles,
-        vods: typeof p.vods === 'string' ? JSON.parse(p.vods) : p.vods,
+        qualities,
+        roles,
+        vods,
         riot: riot
           ? {
               ...riot,

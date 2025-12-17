@@ -34,13 +34,25 @@ export async function GET(
       return NextResponse.json({ error: 'not found' }, { status: 404 });
     }
 
-    // Convertir les JSONB en objets JavaScript
+    // Convertir les JSONB en objets JavaScript (Supabase les retourne généralement comme objets)
+    const parseJsonb = (value: any, defaultValue: any = null) => {
+      if (value === null || value === undefined) return defaultValue;
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          return defaultValue;
+        }
+      }
+      return value;
+    };
+
     const profile = {
       ...found,
-      qualities: typeof found.qualities === 'string' ? JSON.parse(found.qualities) : found.qualities,
-      roles: typeof found.roles === 'string' ? JSON.parse(found.roles) : found.roles,
-      vods: typeof found.vods === 'string' ? JSON.parse(found.vods) : found.vods,
-      riot: typeof found.riot === 'string' ? JSON.parse(found.riot) : found.riot,
+      qualities: Array.isArray(found.qualities) ? found.qualities : parseJsonb(found.qualities, []),
+      roles: Array.isArray(found.roles) ? found.roles : parseJsonb(found.roles, []),
+      vods: Array.isArray(found.vods) ? found.vods : parseJsonb(found.vods, []),
+      riot: parseJsonb(found.riot, null),
     };
 
     return NextResponse.json(profile);
