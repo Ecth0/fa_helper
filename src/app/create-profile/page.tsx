@@ -331,13 +331,22 @@ export default function CreateProfilePage() {
         console.warn('Impossible de sauvegarder la session', err);
       }
       try {
-        await fetch('/api/profiles', {
+        const response = await fetch('/api/profiles', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(profileObj),
         });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('❌ Erreur lors de la sauvegarde du profil:', errorData);
+          toast.error(`Erreur sauvegarde: ${errorData.error || 'Erreur inconnue'}`);
+        } else {
+          console.log('✅ Profil sauvegardé avec succès sur le serveur');
+        }
       } catch (err) {
-        console.warn('Impossible de sauvegarder le profil sur le serveur', err);
+        console.error('❌ Erreur réseau lors de la sauvegarde du profil:', err);
+        toast.error('Erreur réseau lors de la sauvegarde');
       }
       
       // Ajouter à la liste des profils
