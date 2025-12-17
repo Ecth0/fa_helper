@@ -90,30 +90,23 @@ function CommunitySpotlight() {
   const [profiles, setProfiles] = useState<any[]>([])
 
   useEffect(() => {
-    try {
-      const list = localStorage.getItem('playerProfiles')
-      if (list) {
-        const parsed = JSON.parse(list)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setProfiles(parsed)
-          return
+    const loadProfiles = async () => {
+      try {
+        const res = await fetch('/api/profiles', { cache: 'no-store' })
+        if (res.ok) {
+          const list = await res.json()
+          if (Array.isArray(list) && list.length > 0) {
+            setProfiles(list)
+            return
+          }
         }
+      } catch (e) {
+        console.error('Erreur loading profiles for spotlight', e)
       }
-
-      // fallback to single playerProfile
-      const single = localStorage.getItem('playerProfile')
-      if (single) {
-        const p = JSON.parse(single)
-        setProfiles([p])
-        return
-      }
-
-      // no real profiles found: keep profiles empty (don't show fictional examples)
-      setProfiles([])
-    } catch (e) {
-      console.error('Erreur loading profiles for spotlight', e)
       setProfiles([])
     }
+
+    loadProfiles()
   }, [])
 
   return (

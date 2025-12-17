@@ -16,33 +16,81 @@ interface ProfileData {
     title: string;
     thumbnail: string;
   }>;
+  contact?: string;
 }
 
 export default function ViewProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showContact, setShowContact] = useState(false);
 
   useEffect(() => {
-    // Récupérer le profil depuis le localStorage ou l'API
-    const storedProfile = localStorage.getItem('playerProfile');
-    if (storedProfile) {
-      try {
-        const parsed = JSON.parse(storedProfile);
-        // garantir les tableaux par défaut si la structure est ancienne
-        const normalized: ProfileData = {
-          name: parsed.name || '',
-          description: parsed.description || '',
-          qualities: Array.isArray(parsed.qualities) ? parsed.qualities : [],
-          roles: Array.isArray(parsed.roles) ? parsed.roles : [],
-          vods: Array.isArray(parsed.vods) ? parsed.vods : [],
-        };
-        setProfile(normalized);
-      } catch (err) {
-        console.error('Erreur parsing storedProfile', err);
-        setProfile(null);
+    const loadProfile = async () => {
+      // D'abord, essayer localStorage
+      const storedProfile = localStorage.getItem('playerProfile');
+      if (storedProfile) {
+        try {
+          const parsed = JSON.parse(storedProfile);
+          // garantir les tableaux par défaut si la structure est ancienne
+          const normalized: ProfileData = {
+            name: parsed.name || '',
+            description: parsed.description || '',
+            qualities: Array.isArray(parsed.qualities) ? parsed.qualities : [],
+            roles: Array.isArray(parsed.roles) ? parsed.roles : [],
+            vods: Array.isArray(parsed.vods) ? parsed.vods : [],
+            contact: parsed.contact || '',
+          };
+          setProfile(normalized);
+          setIsLoading(false);
+          return;
+        } catch (err) {
+          console.error('Erreur parsing storedProfile', err);
+        }
       }
-    }
-    setIsLoading(false);
+
+      // Si pas dans localStorage, essayer de charger depuis l'API
+      try {
+        let currentSession: { puuid?: string | null } = { puuid: null };
+        const sres = await fetch('/api/session', { cache: 'no-store' });
+        if (sres.ok) {
+          const js = await sres.json();
+          if (js?.session?.puuid) {
+            currentSession = js.session;
+          }
+        }
+
+        if (currentSession?.puuid) {
+          const res = await fetch('/api/profiles', { cache: 'no-store' });
+          if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) {
+              const myProfile = list.find((p: any) => p?.puuid === currentSession.puuid);
+              if (myProfile) {
+                const normalized: ProfileData = {
+                  name: myProfile.name || '',
+                  description: myProfile.description || '',
+                  qualities: Array.isArray(myProfile.qualities) ? myProfile.qualities : [],
+                  roles: Array.isArray(myProfile.roles) ? myProfile.roles : [],
+                  vods: Array.isArray(myProfile.vods) ? myProfile.vods : [],
+                  contact: myProfile.contact || '',
+                };
+                setProfile(normalized);
+                // Sauvegarder dans localStorage pour la prochaine fois
+                localStorage.setItem('playerProfile', JSON.stringify(normalized));
+                setIsLoading(false);
+                return;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Impossible de récupérer le profil depuis l\'API', e);
+      }
+
+      setIsLoading(false);
+    };
+
+    loadProfile();
   }, []);
 
   if (isLoading) {
