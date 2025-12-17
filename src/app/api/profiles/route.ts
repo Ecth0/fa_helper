@@ -3,6 +3,11 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET() {
   try {
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check environment variables.');
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -93,6 +98,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check environment variables.');
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const body = await request.json();
     if (!body || !body.puuid) {
       return NextResponse.json({ error: 'puuid is required' }, { status: 400 });
@@ -151,6 +161,11 @@ export async function POST(request: Request) {
 
 export async function DELETE() {
   try {
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check environment variables.');
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const { error } = await supabase
       .from('profiles')
       .delete()

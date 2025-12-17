@@ -1,15 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// En développement, on ne throw pas d'erreur pour éviter de casser le build
-// mais on log un avertissement
-if ((!supabaseUrl || !supabaseAnonKey) && typeof window === 'undefined') {
-  console.warn('⚠️ Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+// Vérifier que les variables sont définies
+if (!supabaseUrl || !supabaseAnonKey) {
+  if (typeof window === 'undefined') {
+    // Côté serveur, on log une erreur mais on crée quand même le client
+    // pour éviter de casser le build. L'erreur sera visible dans les logs.
+    console.error('❌ Missing Supabase environment variables!');
+    console.error('Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your Vercel project settings.');
+    console.error('Go to: Settings > Environment Variables');
+  }
 }
 
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder-key');
+// Créer le client seulement si les variables sont définies
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // Type pour les profils
 export interface ProfileRow {
