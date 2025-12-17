@@ -14,6 +14,7 @@ type Profile = {
   qualities: string[];
   roles: string[];
   vods: Array<{ id: string; title: string }>;
+  contact?: string;
   riot?: {
     iconUrl?: string;
     iconId?: number | string;
@@ -42,25 +43,45 @@ export default function ProfilesListPage() {
 
 
 
-  const removeUserProfile = () => {
+  const removeUserProfile = async () => {
     if (!confirm('Confirmez-vous la suppression de votre profil ? Cette action est irréversible.')) return;
 
     try {
-      localStorage.removeItem('playerProfile');
+      const puuid = profiles[0]?.riot?.puuid || profiles[0]?.puuid;
+      if (!puuid) {
+        alert('Impossible de supprimer : PUUID manquant');
+        return;
+      }
 
+      // Supprimer depuis l'API
+      try {
+        const res = await fetch(`/api/profiles/by-puuid/${encodeURIComponent(puuid)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          throw new Error('Erreur lors de la suppression depuis l\'API');
+        }
+      } catch (e) {
+        console.error('Erreur lors de la suppression depuis l\'API:', e);
+        alert('Erreur lors de la suppression depuis l\'API');
+        return;
+      }
+
+      // Nettoyer aussi localStorage localement
+      localStorage.removeItem('playerProfile');
       const storedList = localStorage.getItem('playerProfiles');
       if (storedList) {
         try {
           const arr = JSON.parse(storedList);
-          const cleaned = Array.isArray(arr) ? arr.filter((p: any) => p && p.name !== profiles[0]?.name) : [];
+          const cleaned = Array.isArray(arr) ? arr.filter((p: any) => p?.puuid !== puuid) : [];
           localStorage.setItem('playerProfiles', JSON.stringify(cleaned));
         } catch (e) {
           console.error('Erreur lors du nettoyage de playerProfiles:', e);
         }
       }
 
-      setProfiles([]);
-      alert('Profil supprimé avec succès.');
+      // Recharger les profils depuis l'API
+      window.location.reload();
     } catch (err) {
       console.error('Erreur lors de la suppression du profil:', err);
       alert('Une erreur est survenue lors de la suppression.');
@@ -68,14 +89,6 @@ export default function ProfilesListPage() {
   };
 
   useEffect(() => {
-    const example: Profile = {
-      name: 'ExemplePlayer',
-      description: "Ceci est un profil d'exemple montrant comment fonctionne FA Helper.",
-      qualities: ['Communication', 'Macro'],
-      roles: ['Mid'],
-      vods: [{ id: 'dQw4w9WgXcQ', title: 'Exemple VOD' }],
-    };
-
     const load = async () => {
       let currentSession: { puuid?: string | null } = { puuid: null };
 
@@ -103,40 +116,19 @@ export default function ProfilesListPage() {
               if (mineIdx >= 0) {
                 const mine = list[mineIdx];
                 const rest = list.filter((_: any, idx: number) => idx !== mineIdx);
-                setProfiles([mine, ...rest, example]);
+                setProfiles([mine, ...rest]);
                 return;
               }
             }
-            setProfiles([...list, example]);
+            setProfiles(list);
             return;
           }
         }
       } catch (e) {
-        console.warn('Fetch /api/profiles failed, fallback localStorage', e);
+        console.warn('Fetch /api/profiles failed', e);
       }
 
-      const stored = localStorage.getItem('playerProfile');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const normalized: Profile = {
-            name: parsed.name || 'Profil utilisateur',
-            gameName: parsed.gameName,
-            tagLine: parsed.tagLine,
-            description: parsed.description || '',
-            qualities: Array.isArray(parsed.qualities) ? parsed.qualities : [],
-            roles: Array.isArray(parsed.roles) ? parsed.roles : [],
-            vods: Array.isArray(parsed.vods) ? parsed.vods : [],
-            riot: parsed.riot || undefined,
-          };
-          setProfiles([normalized, example]);
-          return;
-        } catch (e) {
-          console.error('Erreur parsing playerProfile:', e);
-        }
-      }
-
-      setProfiles([example]);
+      setProfiles([]);
     };
 
     load();
@@ -221,14 +213,17 @@ export default function ProfilesListPage() {
                               </Link>
                               <UpdateProfileButton 
                                 profile={p} 
-                                onUpdated={(updatedProfile: any) => {
+                                onUpdated={async (updatedProfile: any) => {
                                   try {
+                                    // Sauvegarder dans l'API
+                                    await fetch('/api/profiles', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify(updatedProfile),
+                                    });
+
+                                    // Mettre à jour aussi localStorage localement
                                     localStorage.setItem('playerProfile', JSON.stringify(updatedProfile));
-                                    const list = localStorage.getItem('playerProfiles');
-                                    const arr = list ? JSON.parse(list) : [];
-                                    const idx = arr.findIndex((x: any) => x.name === updatedProfile.name);
-                                    if (idx >= 0) arr[idx] = updatedProfile; else arr.push(updatedProfile);
-                                    localStorage.setItem('playerProfiles', JSON.stringify(arr));
                                   } catch (e) {
                                     console.error('Error saving updated profile', e);
                                   }
@@ -300,10 +295,13 @@ export default function ProfilesListPage() {
                             </div>
                           )}
 
-                          <div className="mt-4 flex gap-2">
+                          <div className="mt-4 flex gap-2 relative">
                             <Link href={`/profiles/${slugify(p.name)}`}>
                               <Button className="bg-blue-600 hover:bg-blue-700">Voir</Button>
                             </Link>
+                            {p.contact && (
+                              <ContactButton contact={p.contact} />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -315,6 +313,27 @@ export default function ProfilesListPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ContactButton({ contact }: { contact: string }) {
+  const [showContact, setShowContact] = useState(false);
+
+  return (
+    <div className="relative">
+      <Button
+        onClick={() => setShowContact(!showContact)}
+        className="bg-green-600 hover:bg-green-700"
+      >
+        {showContact ? 'Masquer' : 'Contacter'}
+      </Button>
+      {showContact && (
+        <div className="absolute z-10 top-full left-0 mt-2 p-4 bg-gray-800 rounded-lg border border-gray-700 shadow-lg min-w-[200px]">
+          <p className="text-sm text-gray-400 mb-2">Contact :</p>
+          <p className="text-white text-sm font-semibold break-all">{contact}</p>
+        </div>
+      )}
     </div>
   );
 }

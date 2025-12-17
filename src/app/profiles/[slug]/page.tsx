@@ -12,6 +12,7 @@ type Profile = {
   qualities: string[];
   roles: string[];
   vods: VOD[];
+  contact?: string;
   riot?: any;
 };
 
@@ -30,9 +31,40 @@ export default function ProfileBySlugPage({ params }: { params: { slug: string }
   const { slug } = resolvedParams as { slug: string };
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showContact, setShowContact] = useState(false);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
     const load = async () => {
+      let currentSessionPuuid: string | null = null;
+
+      // Récupérer la session pour vérifier si c'est le profil de l'utilisateur
+      try {
+        const sres = await fetch('/api/session', { cache: 'no-store' });
+        if (sres.ok) {
+          const js = await sres.json();
+          if (js?.session?.puuid) {
+            currentSessionPuuid = js.session.puuid;
+          }
+        }
+      } catch (e) {
+        console.warn('Fetch /api/session failed', e);
+      }
+
+      // Vérifier aussi dans localStorage
+      const stored = localStorage.getItem('playerProfile');
+      let localStoragePuuid: string | null = null;
+      let localStorageName: string | null = null;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          localStoragePuuid = parsed?.riot?.puuid || parsed?.puuid || null;
+          localStorageName = parsed?.name || null;
+        } catch (e) {
+          console.error('Erreur parsing localStorage', e);
+        }
+      }
+
       try {
         const res = await fetch(`/api/profiles/${slug}`, { cache: 'no-store' });
         if (res.ok) {
@@ -49,9 +81,26 @@ export default function ProfileBySlugPage({ params }: { params: { slug: string }
                   thumbnail: v.thumbnail || `https://img.youtube.com/vi/${v.id}/maxresdefault.jpg`,
                 }))
               : [],
+            contact: p.contact || '',
             riot: p.riot,
           };
           setProfile(normalized);
+
+          // Vérifier si c'est le profil de l'utilisateur (via session, localStorage puuid, ou nom)
+          const profilePuuid = p?.riot?.puuid || p?.puuid;
+          const profileName = p?.name || '';
+          const profileSlug = slugify(profileName);
+          
+          if (profilePuuid && (profilePuuid === currentSessionPuuid || profilePuuid === localStoragePuuid)) {
+            setIsOwnProfile(true);
+          } else if (slug === profileSlug && localStorageName && slug === slugify(localStorageName)) {
+            // Si le slug correspond au nom dans localStorage, c'est probablement le profil de l'utilisateur
+            setIsOwnProfile(true);
+          } else if (profilePuuid === localStoragePuuid && localStoragePuuid) {
+            // Double vérification via puuid
+            setIsOwnProfile(true);
+          }
+
           setIsLoading(false);
           return;
         }
@@ -59,7 +108,7 @@ export default function ProfileBySlugPage({ params }: { params: { slug: string }
         console.warn('Fetch /api/profiles/[slug] failed, fallback localStorage', e);
       }
 
-      const stored = localStorage.getItem('playerProfile');
+      // Fallback localStorage
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -75,11 +124,14 @@ export default function ProfileBySlugPage({ params }: { params: { slug: string }
                   thumbnail: v.thumbnail || `https://img.youtube.com/vi/${v.id}/maxresdefault.jpg`,
                 }))
               : [],
+            contact: parsed.contact || '',
             riot: parsed.riot,
           };
 
           if (slug === slugify(normalized.name)) {
             setProfile(normalized);
+            // Si on charge depuis localStorage et que le slug correspond, c'est le profil de l'utilisateur
+            setIsOwnProfile(true);
             setIsLoading(false);
             return;
           }
@@ -166,6 +218,23 @@ export default function ProfileBySlugPage({ params }: { params: { slug: string }
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center text-gray-400">Aucune VOD</div>
           )}
         </div>
+
+        {profile.contact && !isOwnProfile && (
+          <div className="mt-8 bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <Button
+              onClick={() => setShowContact(!showContact)}
+              className="bg-green-600 hover:bg-green-700 w-full mb-4"
+            >
+              {showContact ? 'Masquer le contact' : 'Contacter'}
+            </Button>
+            {showContact && (
+              <div className="mt-4 p-4 bg-gray-800 rounded border border-gray-700">
+                <p className="text-sm text-gray-400 mb-2">Contact :</p>
+                <p className="text-white text-lg font-semibold break-all">{profile.contact}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-8 flex gap-2">
           <Link href="/profiles">

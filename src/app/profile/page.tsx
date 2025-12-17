@@ -22,6 +22,7 @@ interface ProfileData {
   qualities: string[];
   roles: string[];
   vods: VOD[];
+  contact?: string;
   riot?: {
     iconUrl?: string;
     iconId?: number | string;
@@ -60,41 +61,77 @@ export default function ProfilePage() {
   const [isLoadingVod, setIsLoadingVod] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Charger le profil depuis localStorage au montage
+  // Charger le profil depuis localStorage ou API au montage
   useEffect(() => {
-    // Charger session (auth Riot)
-    const loadSession = async () => {
+    const loadProfile = async () => {
+      let currentSession: { puuid?: string | null; gameName?: string; tagLine?: string } = { puuid: null };
+
+      // Charger session (auth Riot)
       try {
         const res = await fetch('/api/session', { cache: 'no-store' });
         if (res.ok) {
           const js = await res.json();
           if (js?.session?.puuid) {
+            currentSession = js.session;
             setProfile((prev) => ({ ...prev, riot: { ...prev.riot, puuid: js.session.puuid, gameName: js.session.gameName, tagLine: js.session.tagLine } }));
           }
         }
       } catch (e) {
         console.warn('Impossible de récupérer la session', e);
       }
-    };
-    loadSession();
 
-    const storedProfile = localStorage.getItem('playerProfile');
-    if (storedProfile) {
-      try {
-        const parsed = JSON.parse(storedProfile);
-        const normalized: ProfileData = {
-          name: parsed.name || '',
-          description: parsed.description || '',
-          qualities: Array.isArray(parsed.qualities) ? parsed.qualities : [],
-          roles: Array.isArray(parsed.roles) ? parsed.roles : [],
-          vods: Array.isArray(parsed.vods) ? parsed.vods : [],
-          riot: parsed.riot,
-        };
-        setProfile(normalized);
-      } catch (error) {
-        console.error('Erreur lors du chargement du profil:', error);
+      // D'abord, essayer localStorage
+      const storedProfile = localStorage.getItem('playerProfile');
+      if (storedProfile) {
+        try {
+          const parsed = JSON.parse(storedProfile);
+          const normalized: ProfileData = {
+            name: parsed.name || '',
+            description: parsed.description || '',
+            qualities: Array.isArray(parsed.qualities) ? parsed.qualities : [],
+            roles: Array.isArray(parsed.roles) ? parsed.roles : [],
+            vods: Array.isArray(parsed.vods) ? parsed.vods : [],
+            contact: parsed.contact || '',
+            riot: parsed.riot,
+          };
+          setProfile(normalized);
+          return; // Si on a trouvé dans localStorage, on s'arrête ici
+        } catch (error) {
+          console.error('Erreur lors du chargement du profil depuis localStorage:', error);
+        }
       }
-    }
+
+      // Si pas dans localStorage et qu'on a un puuid de session, charger depuis l'API
+      if (currentSession?.puuid) {
+        try {
+          const res = await fetch('/api/profiles', { cache: 'no-store' });
+          if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) {
+              const myProfile = list.find((p: any) => p?.puuid === currentSession.puuid);
+              if (myProfile) {
+                const normalized: ProfileData = {
+                  name: myProfile.name || '',
+                  description: myProfile.description || '',
+                  qualities: Array.isArray(myProfile.qualities) ? myProfile.qualities : [],
+                  roles: Array.isArray(myProfile.roles) ? myProfile.roles : [],
+                  vods: Array.isArray(myProfile.vods) ? myProfile.vods : [],
+                  contact: myProfile.contact || '',
+                  riot: myProfile.riot,
+                };
+                setProfile(normalized);
+                // Sauvegarder aussi dans localStorage pour la prochaine fois
+                localStorage.setItem('playerProfile', JSON.stringify(normalized));
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Impossible de récupérer le profil depuis l\'API', e);
+        }
+      }
+    };
+
+    loadProfile();
   }, []);
 
   const ROLES = ['Top', 'Adc', 'Mid', 'Supp', 'Jgl'];
@@ -334,6 +371,21 @@ export default function ProfilePage() {
                     placeholder="Parlez de vous, votre expérience, vos objectifs..."
                     className="bg-gray-800 border-gray-700 text-white min-h-32"
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="contact" className="block text-sm font-medium text-gray-300 mb-2">
+                    Contact (Discord, Email, etc.)
+                  </label>
+                  <Input
+                    id="contact"
+                    type="text"
+                    value={profile.contact || ''}
+                    onChange={(e) => setProfile({ ...profile, contact: e.target.value })}
+                    placeholder="Ex: Discord#1234 ou email@example.com"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Ces informations ne seront visibles qu'après avoir cliqué sur "Contacter"</p>
                 </div>
               </div>
             </div>

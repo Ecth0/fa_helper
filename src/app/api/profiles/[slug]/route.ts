@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const DATA_PATH = path.join(process.cwd(), 'src', 'data', 'profiles.json');
+import { supabase } from '@/lib/supabase';
 
 function slugify(s: string) {
   return s
@@ -14,27 +11,43 @@ function slugify(s: string) {
     .replace(/(^-|-$)/g, '');
 }
 
-async function readProfiles() {
-  try {
-    const raw = await fs.readFile(DATA_PATH, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 export async function GET(
   request: Request,
   context: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await context.params;
-  const list = await readProfiles();
-  const found = list.find((p: any) => slugify(p?.name || '') === slug);
-  if (!found) {
-    return NextResponse.json({ error: 'not found' }, { status: 404 });
+  try {
+    const { slug } = await context.params;
+    
+    // Récupérer tous les profils et chercher par slug
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching profiles:', error);
+      return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+    }
+
+    const found = (data || []).find((p: any) => slugify(p?.name || '') === slug);
+    
+    if (!found) {
+      return NextResponse.json({ error: 'not found' }, { status: 404 });
+    }
+
+    // Convertir les JSONB en objets JavaScript
+    const profile = {
+      ...found,
+      qualities: typeof found.qualities === 'string' ? JSON.parse(found.qualities) : found.qualities,
+      roles: typeof found.roles === 'string' ? JSON.parse(found.roles) : found.roles,
+      vods: typeof found.vods === 'string' ? JSON.parse(found.vods) : found.vods,
+      riot: typeof found.riot === 'string' ? JSON.parse(found.riot) : found.riot,
+    };
+
+    return NextResponse.json(profile);
+  } catch (e: any) {
+    console.error('GET /api/profiles/[slug] error:', e);
+    return NextResponse.json({ error: 'internal error' }, { status: 500 });
   }
-  return NextResponse.json(found);
 }
 
 export const dynamic = 'force-dynamic';
