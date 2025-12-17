@@ -104,10 +104,20 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    console.log('🔵 POST /api/profiles - Début de la requête');
+    
     if (!supabase) {
-      console.error('Supabase client not initialized. Check environment variables.');
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+      console.error('❌ Supabase client not initialized. Vérifiez les variables d\'environnement :');
+      console.error(`- NEXT_PUBLIC_SUPABASE_URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Défini' : '❌ Manquant'}`);
+      console.error(`- NEXT_PUBLIC_SUPABASE_ANON_KEY: ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Défini' : '❌ Manquant'}`);
+      
+      return NextResponse.json({ 
+        error: 'Base de données non configurée',
+        details: 'Le client Supabase n\'a pas pu être initialisé. Vérifiez les logs du serveur pour plus de détails.'
+      }, { status: 500 });
     }
+    
+    console.log('🔵 Supabase client initialisé avec succès');
 
     const body = await request.json();
     if (!body || !body.puuid) {
@@ -129,53 +139,92 @@ export async function POST(request: Request) {
     };
 
     // Vérifier si le profil existe déjà (utiliser maybeSingle pour éviter les erreurs si non trouvé)
-    const { data: existing, error: checkError } = await supabase
-      .from('profiles')
-      .select('puuid')
-      .eq('puuid', body.puuid)
-      .maybeSingle();
-
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error checking existing profile:', checkError);
-      return NextResponse.json({ error: 'Failed to check profile', details: checkError.message }, { status: 500 });
-    }
-
-    if (existing) {
-      // Mise à jour
-      const { error: updateError } = await supabase
+    console.log(`🔍 Vérification de l'existence du profil avec puuid: ${body.puuid}`);
+    
+    try {
+      const { data: existing, error: checkError } = await supabase
         .from('profiles')
-        .update(profileData)
-        .eq('puuid', body.puuid);
+        .select('puuid')
+        .eq('puuid', body.puuid)
+        .maybeSingle();
 
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        return NextResponse.json({ 
-          error: 'Failed to update profile', 
-          details: updateError.message,
-          code: updateError.code 
-        }, { status: 500 });
+      if (checkError) {
+        if (checkError.code === 'PGRST116') { // PGRST116 = no rows returned
+          console.log('ℹ️ Aucun profil existant trouvé, création d\'un nouveau profil');
+        } else {
+          console.error('❌ Erreur lors de la vérification du profil existant:', {
+            code: checkError.code,
+            message: checkError.message,
+            details: checkError.details,
+            hint: checkError.hint
+          });
+          return NextResponse.json({ 
+            error: 'Échec de la vérification du profil', 
+            details: checkError.message,
+            code: checkError.code,
+            hint: checkError.hint
+          }, { status: 500 });
+        }
+      } else {
+        console.log(`ℹ️ Profil existant ${existing ? 'trouvé' : 'non trouvé'}`);
       }
-      console.log('✅ Profile updated successfully:', body.puuid);
-    } else {
-      // Insertion
-      const { data: insertedData, error: insertError } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select();
 
-      if (insertError) {
-        console.error('❌ Error inserting profile:', insertError);
-        return NextResponse.json({ 
-          error: 'Failed to insert profile', 
-          details: insertError.message,
-          code: insertError.code,
-          hint: insertError.hint 
-        }, { status: 500 });
+      if (existing) {
+        // Mise à jour
+        console.log('🔄 Mise à jour du profil existant...');
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('puuid', body.puuid);
+
+        if (updateError) {
+          console.error('❌ Erreur lors de la mise à jour du profil:', {
+            code: updateError.code,
+            message: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint
+          });
+          return NextResponse.json({ 
+            error: 'Échec de la mise à jour du profil', 
+            details: updateError.message,
+            code: updateError.code,
+            hint: updateError.hint
+          }, { status: 500 });
+        }
+        console.log(`✅ Profil mis à jour avec succès: ${body.puuid}`);
+      } else {
+        // Insertion
+        console.log('➕ Création d\'un nouveau profil...');
+        const { data: insertedData, error: insertError } = await supabase
+          .from('profiles')
+          .insert([profileData])
+          .select();
+
+        if (insertError) {
+          console.error('❌ Erreur lors de la création du profil:', {
+            code: insertError.code,
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint
+          });
+          return NextResponse.json({ 
+            error: 'Échec de la création du profil', 
+            details: insertError.message,
+            code: insertError.code,
+            hint: insertError.hint
+          }, { status: 500 });
+        }
+        console.log('✅ Profil créé avec succès:', body.puuid, insertedData);
       }
-      console.log('✅ Profile inserted successfully:', body.puuid, insertedData);
+
+      return NextResponse.json({ ok: true });
+    } catch (error) {
+      console.error('❌ Erreur inattendue lors de la vérification du profil:', error);
+      return NextResponse.json({ 
+        error: 'Erreur inattendue lors de la vérification du profil',
+        details: error instanceof Error ? error.message : 'Erreur inconnue'
+      }, { status: 500 });
     }
-
-    return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error('POST /api/profiles error', e);
     return NextResponse.json({ error: 'internal error' }, { status: 500 });
