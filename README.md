@@ -2,55 +2,55 @@ FA Helper est une plateforme dédiée aux joueurs de League of Legends souhaitan
 
 🔗 Lien du site : https://fa-helper.vercel.app/
 
-Fonctionnalités clés
+-Fonctionnalités clés
 
-Voir les équipes disponibles
+-Voir les équipes disponibles
 
-Contacter les équipes
+-Contacter les équipes
 
-Créer son profil joueur
+-Créer son profil joueur
 
-Se mettre en valeur pour intégrer une équipe ou une compétition
+-Se mettre en valeur pour intégrer une équipe ou une compétition
 
-Voir les profils des autres joueurs
+-Voir les profils des autres joueurs
 
-Organiser des scrims
+-Organiser des scrims
 
-Planifier des matchs d’entraînement entre équipes
+-Planifier des matchs d’entraînement entre équipes
 
 Technologies utilisées
 
-Next.js
+-Next.js
 
-TypeScript
+-TypeScript
 
-CSS
+-CSS
 
 Le projet est accessible en ligne à l’adresse suivante :
 👉 https://fa-helper.vercel.app/
 
 Installation en local
-Prérequis
+-Prérequis
 
-Node.js installé
+-Node.js installé
 
-Une clé API Riot Games
+-Une clé API Riot Games
 
 Étapes
 
-Obtenir une clé API Riot :
+-Obtenir une clé API Riot :
 https://developer.riotgames.com/app-type
 
-Ajouter la clé API dans les variables d’environnement du projet.
+-Ajouter la clé API dans les variables d’environnement du projet.
 
-Cloner le dépôt et lancer le projet :
+-Cloner le dépôt et lancer le projet :
 
 git clone https://github.com/Ecth0/fa_helper.git
 cd fa_helper
 npm install
 npm run dev
 
-Ouvrir le navigateur à l’adresse suivante :
+-Ouvrir le navigateur à l’adresse suivante :
 http://localhost:3000
 
 📌 Notes
