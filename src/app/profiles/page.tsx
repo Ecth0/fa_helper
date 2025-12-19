@@ -111,7 +111,7 @@ export default function ProfilesListPage() {
         const res = await fetch('/api/profiles', { cache: 'no-store' });
         if (res.ok) {
           const list = await res.json();
-          console.log('📋 Profiles fetched from API:', list);
+          // Logs désactivés pour la confidentialité
           if (Array.isArray(list) && list.length > 0) {
             if (currentSession?.puuid) {
               const mineIdx = list.findIndex((p: any) => p?.puuid === currentSession.puuid);
@@ -364,8 +364,6 @@ function UpdateProfileButton({ profile, onUpdated }: { profile: any; onUpdated: 
   };
 
   const tryUpdate = useCallback(async () => {
-    console.log('UpdateProfileButton clicked, profile:', profile);
-    
     if (!profile || !profile.riot) {
       console.warn('No profile or no riot data');
       toast.error('Impossible de mettre à jour : données Riot manquantes');
