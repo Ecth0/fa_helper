@@ -13,8 +13,7 @@ Fonctionnalités clés:
 -Organiser des scrims
 -Planifier des matchs d’entraînement entre équipes
 
-🛠️ Technologies utilisées
-
+Technologies utilisées:
 -Next.js
 -TypeScript
 -CSS
@@ -33,16 +32,16 @@ Prérequis:
 1) Obtenir une clé API Riot:
 https://developer.riotgames.com/app-type
 
-Puis l’ajouter dans les variables d’environnement du projet.
+Puis l’ajouter dans les variables d’environnement du projet
 
-2) Cloner le dépôt et lancer le projet
+2) Cloner le dépot et lancer le projet:
 
 -git clone https://github.com/Ecth0/fa_helper.git
 -cd fa_helper
 -npm install
 -npm run dev
 
-3) Ouvrir le navigateur à l’adresse :
+3) Ouvrir le navigateur à cette adresse:
 http://localhost:3000
 
 📌 Notes
