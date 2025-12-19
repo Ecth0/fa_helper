@@ -19,11 +19,10 @@ Fonctionnalités clés:
 -TypeScript
 -CSS
 
-🌐 Démo
 Le projet est accessible en ligne à l’adresse suivante :
 👉 https://fa-helper.vercel.app/
 
-💻 Installation en local:
+Installation en local:
 Prérequis:
 
 -Node.js installé
